@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SRT 자막 시간 밀기 · 합치기 · 검사 | 브라우저에서 바로 처리</title>
+<meta name="description" content="SRT 자막 파일의 타임코드를 초 단위로 밀고, 두 자막을 하나로 이어 붙이고, 한 줄 글자수·표시 시간·시간 겹침·번호 누락을 검사합니다. 파일은 서버로 보내지 않고 브라우저 안에서만 처리됩니다.">
+<link rel="canonical" href="https://choi-kwan-u.github.io/tools/srt-tool/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SRT 자막 시간 밀기 · 합치기 · 검사 | 브라우저에서 바로 처리">
+<meta property="og:description" content="SRT 자막 파일의 타임코드를 초 단위로 밀고, 두 자막을 하나로 이어 붙이고, 한 줄 글자수·표시 시간·시간 겹침·번호 누락을 검사합니다. 파일은 서버로 보내지 않고 브라우저 안에서만 처리됩니다.">
+<meta property="og:url" content="https://choi-kwan-u.github.io/tools/srt-tool/">
+<meta property="og:site_name" content="글쓰기 도구함">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%233d3a35'/%3E%3Ctext x='50' y='70' font-size='56' text-anchor='middle' fill='white' font-family='sans-serif'%3E글%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  .privacy { margin: 0 0 14px; padding: 8px 12px; border-radius: 8px; background: var(--ok-bg); color: var(--ok); font-size: 13px; }
+  #text2 { min-height: 110px; }
+  .field-row .btn-small { flex: 0 0 auto; }
+  pre.preview .srt-block.is-hl { background: var(--warn-bg); box-shadow: 0 0 0 3px var(--warn-bg); border-radius: 3px; }
+  .issue-btn { display: block; width: 100%; padding: 0; background: none; border: none; text-align: left; font: inherit; font-size: 14px; color: inherit; cursor: pointer; }
+  .issue-btn .tc { color: var(--muted); font-size: 13px; margin-left: 4px; }
+  .issue-btn .why { display: block; color: var(--bad); font-size: 13px; }
+  .issue-btn:hover strong, .issue-btn:focus-visible strong { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="site-header"></div>
+  <main>
+    <h1>SRT 자막 도구</h1>
+    <p class="lead">자막 시간 밀기·합치기·검사를 서버 전송 없이 브라우저 안에서 처리합니다.</p>
+
+    <section class="card">
+      <p class="privacy">파일은 서버로 전송되지 않고 브라우저 안에서만 처리됩니다.</p>
+
+      <div class="field">
+        <label class="field-label" for="file1">SRT 파일 열기</label>
+        <input type="file" id="file1" accept=".srt,text/plain">
+        <p class="hint" id="file1-hint" aria-live="polite">파일을 고르면 내용이 아래 입력란에 채워집니다. UTF-8로 먼저 읽고, 깨지면 EUC-KR로 다시 읽습니다.</p>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="text1">또는 자막 내용 붙여넣기</label>
+        <textarea id="text1" spellcheck="false" placeholder="1&#10;00:00:01,000 --> 00:00:03,000&#10;자막 텍스트&#10;&#10;2&#10;00:00:04,500 --> 00:00:06,000&#10;다음 자막 텍스트"></textarea>
+        <div class="btn-row">
+          <button type="button" class="btn-small" id="btn-sample1">샘플 넣기</button>
+          <button type="button" class="btn-small" id="btn-clear1">비우기</button>
+        </div>
+        <p class="hint" id="parse-hint1" aria-live="polite"></p>
+      </div>
+
+      <div class="tabs" id="tabs" role="tablist">
+        <button class="tab is-active" data-tab="shift">시간 밀기</button>
+        <button class="tab" data-tab="merge">합치기</button>
+        <button class="tab" data-tab="check">검사</button>
+      </div>
+
+      <section class="tab-panel" data-panel="shift" role="tabpanel">
+        <div class="field">
+          <label class="field-label" for="shift-sec">이동할 시간 (양수: 자막을 늦춤, 음수: 앞당김)</label>
+          <div class="field-row">
+            <input type="number" id="shift-sec" class="inline-input" step="0.1" value="0" inputmode="decimal">
+            <span class="unit">초</span>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn-small shift-add" data-add="-1">-1초</button>
+            <button type="button" class="btn-small shift-add" data-add="-0.5">-0.5초</button>
+            <button type="button" class="btn-small shift-add" data-add="0.5">+0.5초</button>
+            <button type="button" class="btn-small shift-add" data-add="1">+1초</button>
+          </div>
+          <p class="hint" id="shift-hint" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="tab-panel" data-panel="merge" role="tabpanel">
+        <div class="field">
+          <label class="field-label" for="file2">두 번째 SRT 파일 열기</label>
+          <input type="file" id="file2" accept=".srt,text/plain">
+          <p class="hint" id="file2-hint" aria-live="polite">위 자막 뒤에 이어 붙일 파일입니다. 인코딩은 같은 방식으로 읽습니다.</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="text2">또는 두 번째 자막 붙여넣기</label>
+          <textarea id="text2" spellcheck="false" placeholder="이어 붙일 자막을 붙여넣으세요."></textarea>
+          <div class="btn-row">
+            <button type="button" class="btn-small" id="btn-sample2">샘플 넣기</button>
+            <button type="button" class="btn-small" id="btn-clear2">비우기</button>
+          </div>
+          <p class="hint" id="parse-hint2" aria-live="polite"></p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="merge-offset">두 번째 자막을 미는 시간(오프셋)</label>
+          <div class="field-row">
+            <input type="number" id="merge-offset" class="inline-input" step="0.1" value="0" inputmode="decimal">
+            <span class="unit">초</span>
+            <button type="button" class="btn-small" id="btn-offset-auto">자동 제안</button>
+          </div>
+          <p class="hint" id="merge-hint" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="tab-panel" data-panel="check" role="tabpanel">
+        <div class="field">
+          <label class="field-label" for="check-max">한 줄 글자수 상한</label>
+          <div class="field-row">
+            <input type="number" id="check-max" class="inline-input" min="1" max="200" step="1" value="16" inputmode="numeric">
+            <span class="unit">자</span>
+          </div>
+          <p class="hint" id="check-hint" aria-live="polite">공백 포함, 유니코드 코드포인트 기준으로 셉니다. 검사 항목: 글자수 초과 · 표시 시간 1초 미만 · 시간 겹침 · 번호 누락·불연속</p>
+        </div>
+      </section>
+
+      <button type="button" class="btn-primary" id="btn-main">밀어서 .srt 다운로드</button>
+      <p class="hint" id="action-hint" aria-live="polite"></p>
+
+      <div class="result">
+        <p class="result-label" id="preview-label">시간 밀기 미리보기</p>
+        <div id="check-result" class="hidden">
+          <p id="check-status" class="mt-0" aria-live="polite"></p>
+          <ul class="plain-list" id="check-list"></ul>
+        </div>
+        <pre class="preview" id="preview"></pre>
+      </div>
+    </section>
+
+    <div class="ad-slot"><!-- AdSense 코드 자리 --></div>
+
+    <nav class="other-tools" aria-label="다른 도구">
+      <h2>다른 도구</h2>
+      <ul>
+        <li><a href="../speech-time/">발표 시간 계산기</a><span class="desc">글자수로 말하기 시간 계산</span></li>
+        <li><a href="../contest-length/">공모전 분량 체크기</a><span class="desc">원고지 매수 변환·분량 확인</span></li>
+        <li><a href="../reading-time/">읽는 시간 계산기</a><span class="desc">글자수로 읽는 시간 계산</span></li>
+        <li><a href="../name-generator/">소설 인물 이름 생성기</a><span class="desc">시대·성별·분위기별 한국 이름</span></li>
+      </ul>
+    </nav>
+
+    <article class="article">
+      <h2>SRT 자막 파일의 구조</h2>
+      <p>SRT(SubRip Text)는 가장 널리 쓰이는 자막 형식입니다. 전용 프로그램 없이 메모장으로 열어 고칠 수 있을 만큼 구조가 단순합니다. 자막 한 개는 번호, 타임코드, 텍스트로 이루어진 하나의 블록이고, 블록과 블록 사이는 빈 줄 하나로 구분합니다.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>줄</th><th>내용</th><th>예시</th></tr></thead>
+          <tbody>
+            <tr><td>1번째 줄</td><td>자막 번호. 1부터 순서대로 매깁니다.</td><td>1</td></tr>
+            <tr><td>2번째 줄</td><td>시작 시각 --&gt; 종료 시각. 시:분:초,밀리초 형식입니다.</td><td>00:00:01,000 --&gt; 00:00:03,000</td></tr>
+            <tr><td>3번째 줄부터</td><td>화면에 보일 텍스트. 보통 1~2줄입니다.</td><td>첫 번째 자막입니다.</td></tr>
+            <tr><td>마지막</td><td>빈 줄. 다음 블록과 구분합니다.</td><td>(비어 있음)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>밀리초 구분자는 원래 콤마(,)이지만 점(.)을 쓴 파일도 흔히 보입니다. 이 도구는 두 가지를 모두 읽어 들이고, 내보낼 때는 표준 형식인 콤마와 세 자리 밀리초로 통일합니다. 줄바꿈이 윈도우식(CRLF)이든 유닉스식(LF)이든, 번호가 빠져 있든, 블록 사이에 빈 줄이 여러 개 있든 최대한 읽어 들이며, 밀기와 합치기 결과는 번호를 1부터 다시 매겨 저장합니다.</p>
+
+      <h2>자막 싱크가 어긋나는 흔한 원인</h2>
+      <p>자막이 영상과 맞지 않을 때는 먼저 처음부터 끝까지 똑같이 어긋나는지, 아니면 뒤로 갈수록 점점 벌어지는지를 확인하는 것이 좋습니다. 원인에 따라 고치는 방법이 다르기 때문입니다.</p>
+      <ul>
+        <li><strong>인트로·광고가 잘리거나 추가된 경우</strong> — 영상 앞부분 길이가 달라지면 자막 전체가 같은 양만큼 밀립니다. 가장 흔한 경우이며, 첫 대사가 들리는 순간과 첫 자막의 시작 시각 차이를 재서 시간 밀기 탭에 넣으면 한 번에 해결됩니다.</li>
+        <li><strong>프레임레이트 차이</strong> — 23.976fps용 자막을 25fps 영상에 쓰면 처음에는 맞다가 뒤로 갈수록 점점 어긋납니다. 재생 속도가 약 4% 다르기 때문입니다. 이런 경우 일정한 시간을 미는 것만으로는 해결되지 않고 타임코드 전체를 비율로 늘리거나 줄여야 하므로, 전문 자막 편집기를 쓰는 편이 좋습니다.</li>
+        <li><strong>편집본 차이</strong> — 극장판·감독판·방송용처럼 장면이 추가되거나 잘린 편집본은 구간마다 오차가 달라집니다. 특정 장면 이후만 밀어야 하므로 파일을 그 지점에서 나누어 따로 민 뒤, 합치기 탭으로 다시 이어 붙이는 방법을 쓸 수 있습니다.</li>
+        <li><strong>영상이 1부·2부로 나뉜 경우</strong> — 두 영상을 하나로 합쳤다면 두 번째 자막을 첫 번째 영상 길이만큼 밀어 이어 붙여야 합니다. 합치기 탭은 첫 번째 자막의 마지막 종료 시각을 기준으로 오프셋을 자동 제안하므로, 필요하면 실제 영상 길이에 맞게 고쳐 쓰세요.</li>
+      </ul>
+
+      <h2>방송 자막 글자수 관행</h2>
+      <p>방송사나 OTT의 자막 가이드라인은 매체마다 조금씩 다르지만, 일반적으로 아래와 같은 범위를 권하는 경우가 많습니다. 자막은 집중해서 읽는 글이 아니라 화면을 보는 동안 스쳐 지나가는 글이므로, 한 번에 눈에 들어오는 길이와 충분한 노출 시간이 중요합니다.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>항목</th><th>일반적인 관행</th></tr></thead>
+          <tbody>
+            <tr><td>한 줄 글자수</td><td>한글 기준 12~16자 안팎(공백 포함)</td></tr>
+            <tr><td>줄 수</td><td>최대 2줄</td></tr>
+            <tr><td>노출 시간</td><td>1~7초. 짧은 감탄사도 1초 이상</td></tr>
+            <tr><td>자막 사이 간격</td><td>겹치지 않게, 보통 2프레임 이상 띄움</td></tr>
+            <tr><td>읽기 속도</td><td>초당 4~6자 정도</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>검사 탭은 이런 관행을 기준으로 한 줄 글자수 상한(기본 16자)을 넘는 자막, 1초 미만으로 노출되는 자막, 이전 자막과 시간이 겹치는 자막, 번호가 빠지거나 순서가 어긋난 자막을 찾아 줍니다. 글자수는 공백을 포함해 유니코드 코드포인트 단위로 세므로 이모지나 특수문자도 한 글자로 계산됩니다. 유튜브처럼 가로 폭이 넓은 매체라면 상한을 20자 안팎으로 올려 검사해도 괜찮습니다.</p>
+
+      <h2>사용 방법과 주의할 점</h2>
+      <ol>
+        <li>SRT 파일을 열거나 자막 내용을 그대로 붙여넣습니다. 인코딩은 UTF-8로 먼저 읽고, 깨지면 EUC-KR(CP949)로 다시 읽습니다. 예전 윈도우에서 만든 한글 자막도 대부분 정상적으로 열립니다.</li>
+        <li>시간 밀기 탭에서 초 단위로 이동량을 넣으면 미리보기가 즉시 바뀝니다. 양수는 자막을 늦추고 음수는 앞당깁니다. 0초보다 앞으로 가는 자막은 00:00:00,000으로 맞춥니다.</li>
+        <li>합치기 탭에서 두 번째 자막을 넣고 오프셋을 확인한 뒤 내려받으면, 번호가 1부터 다시 매겨진 하나의 파일이 됩니다.</li>
+        <li>검사 탭에서 문제 목록의 항목을 누르면 미리보기에서 해당 자막이 표시됩니다. 내용 수정은 원본 편집기에서 하고 다시 검사하면 됩니다.</li>
+      </ol>
+      <p>모든 처리는 브라우저 안에서만 이루어지며 파일이 서버로 전송되지 않습니다. 내려받는 파일은 UTF-8로 저장되므로, 오래된 재생기에서 한글이 깨진다면 재생기의 자막 인코딩 설정을 UTF-8로 바꾸세요.</p>
+    </article>
+  </main>
+
+  <div class="ad-slot"><!-- AdSense 코드 자리 --></div>
+  <div id="site-footer"></div>
+</div>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.Tools;
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- 요소 ---------- */
+  var text1 = $('text1'), text2 = $('text2');
+  var file1 = $('file1'), file2 = $('file2');
+  var fileHint1 = $('file1-hint'), fileHint2 = $('file2-hint');
+  var parseHint1 = $('parse-hint1'), parseHint2 = $('parse-hint2');
+  var shiftInput = $('shift-sec'), shiftHint = $('shift-hint');
+  var offsetInput = $('merge-offset'), mergeHint = $('merge-hint');
+  var maxInput = $('check-max'), checkHint = $('check-hint');
+  var checkResult = $('check-result'), checkStatus = $('check-status'), checkList = $('check-list');
+  var previewLabel = $('preview-label'), preview = $('preview');
+  var btnMain = $('btn-main'), actionHint = $('action-hint');
+
+  /* ---------- 상수 ---------- */
+  var FILE_HINT_1 = fileHint1.textContent;
+  var FILE_HINT_2 = fileHint2.textContent;
+  var CHECK_HINT = checkHint.textContent;
+  var MAX_ABS_SEC = 359999;     /* 99:59:59 까지 */
+  var MAX_LIMIT = 200;
+  var MAX_LIST = 300;           /* 검사 목록 최대 표시 개수 */
+  var LABELS = { shift: '밀어서 .srt 다운로드', merge: '합쳐서 .srt 다운로드', check: '검사 실행' };
+
+  var SAMPLE1 = [
+    '1', '00:00:01,000 --> 00:00:03,000', '첫 번째 자막입니다.', '',
+    '2', '00:00:04,500 --> 00:00:06,000', '두 번째 자막은', '두 줄로 표시됩니다.', '',
+    '3', '00:00:07,250 --> 00:00:09,000', '이 줄은 한 줄 글자수 상한을 넘기는 긴 자막입니다.'
+  ].join('\n') + '\n';
+  var SAMPLE2 = [
+    '1', '00:00:00,500 --> 00:00:02,000', '이어 붙일 자막입니다.', '',
+    '2', '00:00:02,500 --> 00:00:04,000', '두 번째 파일의 마지막 자막입니다.'
+  ].join('\n') + '\n';
+
+  var state = {
+    name1: '',
+    parsed1: { blocks: [], skipped: 0 },
+    parsed2: { blocks: [], skipped: 0 },
+    offsetTouched: false,
+    checkRan: false
+  };
+
+  /* ---------- SRT 파서 ---------- */
+  var TIME_RE = /^(\d{1,3}):(\d{1,2}):(\d{1,2})[,.](\d{1,3})\s*-->\s*(\d{1,3}):(\d{1,2}):(\d{1,2})[,.](\d{1,3})/;
+  var INDEX_RE = /^\d+$/;
+
+  function parseTime(m, o) {
+    var h = parseInt(m[o], 10), mi = parseInt(m[o + 1], 10), s = parseInt(m[o + 2], 10);
+    var ms = parseInt((m[o + 3] + '00').slice(0, 3), 10);
+    return ((h * 60 + mi) * 60 + s) * 1000 + ms;
+  }
+
+  function isIndexLine(lines, i) {
+    return INDEX_RE.test(lines[i].trim()) && i + 1 < lines.length && TIME_RE.test(lines[i + 1].trim());
+  }
+
+  function parseSrt(text) {
+    var out = { blocks: [], skipped: 0 };
+    text = String(text == null ? '' : text).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    if (!text.trim()) return out;
+    var lines = text.split('\n');
+    var n = lines.length, i = 0;
+    while (i < n) {
+      var line = lines[i].trim();
+      if (!line) { i++; continue; }
+      var index = null, m = null;
+      if (isIndexLine(lines, i)) {
+        index = parseInt(line, 10);
+        m = TIME_RE.exec(lines[i + 1].trim());
+        i += 2;
+      } else if ((m = TIME_RE.exec(line))) {
+        i += 1;
+      } else {
+        out.skipped++;
+        while (i < n && lines[i].trim()) i++;
+        continue;
+      }
+      var textLines = [];
+      while (i < n) {
+        var t = lines[i].trim();
+        if (!t || TIME_RE.test(t) || isIndexLine(lines, i)) break;
+        textLines.push(t);
+        i++;
+      }
+      out.blocks.push({ index: index, start: parseTime(m, 1), end: parseTime(m, 5), lines: textLines });
+    }
+    return out;
+  }
+
+  /* ---------- 직렬화 ---------- */
+  function pad(n, w) { var s = String(n); while (s.length < w) s = '0' + s; return s; }
+
+  function fmtTime(ms) {
+    ms = Math.max(0, Math.round(ms));
+    var h = Math.floor(ms / 3600000);
+    var m = Math.floor(ms / 60000) % 60;
+    var s = Math.floor(ms / 1000) % 60;
+    return pad(h, 2) + ':' + pad(m, 2) + ':' + pad(s, 2) + ',' + pad(ms % 1000, 3);
+  }
+
+  function fmtDelta(ms) {
+    var s = Math.round(Math.abs(ms)) / 1000;
+    return (ms < 0 ? '-' : '+') + T.formatNumber(s) + '초';
+  }
+
+  function numberOf(b, i, mode) {
+    if (mode === 'original') return b.index == null ? '' : String(b.index);
+    return String(i + 1);
+  }
+
+  function blockText(b, numLine) {
+    return (numLine ? numLine + '\n' : '') +
+      fmtTime(b.start) + ' --> ' + fmtTime(b.end) +
+      (b.lines.length ? '\n' + b.lines.join('\n') : '');
+  }
+
+  function serialize(blocks, mode) {
+    return blocks.map(function (b, i) { return blockText(b, numberOf(b, i, mode)); }).join('\n\n') + '\n';
+  }
+
+  function rangeOf(blocks) {
+    if (!blocks.length) return null;
+    var first = blocks[0].start, last = blocks[0].end;
+    for (var i = 1; i < blocks.length; i++) {
+      if (blocks[i].start < first) first = blocks[i].start;
+      if (blocks[i].end > last) last = blocks[i].end;
+    }
+    return { first: first, last: last };
+  }
+
+  function shiftBlocks(blocks, deltaMs) {
+    var clipped = 0;
+    var res = blocks.map(function (b) {
+      var s = b.start + deltaMs, e = b.end + deltaMs;
+      if (s < 0 || e < 0) clipped++;
+      return { index: b.index, start: Math.max(0, s), end: Math.max(0, e), lines: b.lines };
+    });
+    return { blocks: res, clipped: clipped };
+  }
+
+  /* ---------- 숫자 입력 읽기 ---------- */
+  function readSeconds(input, fallback) {
+    var raw = String(input.value || '').trim();
+    if (input.validity && input.validity.badInput) {
+      return { value: fallback, note: '숫자가 아니어서 ' + fallback + '초로 처리합니다.' };
+    }
+    if (raw === '') return { value: fallback, note: '' };
+    var n = T.toNumber(raw, NaN);
+    if (!isFinite(n)) return { value: fallback, note: '숫자가 아니어서 ' + fallback + '초로 처리합니다.' };
+    if (Math.abs(n) > MAX_ABS_SEC) {
+      return { value: T.clamp(n, -MAX_ABS_SEC, MAX_ABS_SEC), note: '±' + T.formatNumber(MAX_ABS_SEC) + '초 범위로 제한했습니다.' };
+    }
+    return { value: n, note: '' };
+  }
+
+  function readLimit() {
+    var raw = String(maxInput.value || '').trim();
+    var bad = maxInput.validity && maxInput.validity.badInput;
+    var n = T.toNumber(raw, NaN);
+    if (bad || raw === '' || !isFinite(n)) return { value: 16, note: '상한이 비어 있거나 숫자가 아니어서 16자로 검사합니다.' };
+    var v = Math.floor(n);
+    if (v < 1 || v > MAX_LIMIT) {
+      return { value: T.clamp(v, 1, MAX_LIMIT), note: '상한은 1~' + MAX_LIMIT + '자 사이로 제한했습니다.' };
+    }
+    return { value: v, note: '' };
+  }
+
+  /* ---------- 파일 읽기 (UTF-8 → EUC-KR) ---------- */
+  function decodeBuffer(buf) {
+    var bytes = new Uint8Array(buf);
+    var text, enc;
+    try {
+      if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+        text = new TextDecoder('utf-16le').decode(buf); enc = 'UTF-16LE';
+      } else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+        text = new TextDecoder('utf-16be').decode(buf); enc = 'UTF-16BE';
+      } else {
+        text = new TextDecoder('utf-8', { fatal: true }).decode(buf); enc = 'UTF-8';
+      }
+    } catch (e) {
+      try {
+        text = new TextDecoder('euc-kr').decode(buf); enc = 'EUC-KR';
+      } catch (e2) {
+        text = new TextDecoder('utf-8').decode(buf); enc = 'UTF-8 (일부 글자 깨짐)';
+      }
+    }
+    return { text: text.replace(/^\uFEFF/, ''), enc: enc };
+  }
+
+  function readSrtFile(file, done) {
+    var reader = new FileReader();
+    reader.onerror = function () { done(new Error('파일을 읽지 못했습니다. 다시 시도하세요.')); };
+    if (typeof TextDecoder === 'undefined') {
+      reader.onload = function () { done(null, String(reader.result || '').replace(/^\uFEFF/, ''), 'UTF-8'); };
+      reader.readAsText(file, 'utf-8');
+      return;
+    }
+    reader.onload = function () {
+      var r = decodeBuffer(reader.result);
+      done(null, r.text, r.enc);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function bindFile(input, hint, textarea, onLoaded) {
+    input.addEventListener('change', function () {
+      var f = input.files && input.files[0];
+      if (!f) return;
+      hint.textContent = f.name + ' 읽는 중…';
+      readSrtFile(f, function (err, text, enc) {
+        if (err) { hint.textContent = err.message; hint.classList.add('text-bad'); return; }
+        hint.classList.remove('text-bad');
+        textarea.value = text;
+        hint.textContent = f.name + ' · ' + T.formatNumber(f.size) + '바이트 · ' + enc + '로 읽었습니다.';
+        if (onLoaded) onLoaded(f.name);
+        refresh();
+      });
+    });
+  }
+
+  function baseName(name) {
+    return String(name || '').replace(/\.[^.]*$/, '').trim() || 'subtitle';
+  }
+
+  /* ---------- 미리보기 ---------- */
+  function setPreview(blocks, mode, emptyMsg) {
+    if (!blocks.length) {
+      preview.innerHTML = '<span class="text-muted">' + T.escapeHtml(emptyMsg) + '</span>';
+      return;
+    }
+    var html = blocks.map(function (b, i) {
+      return '<span class="srt-block" data-i="' + i + '">' +
+        T.escapeHtml(blockText(b, numberOf(b, i, mode))) + '</span>';
+    });
+    preview.innerHTML = html.join('\n\n') + '\n';
+  }
+
+  function highlightBlock(i) {
+    var prev = preview.querySelector('.srt-block.is-hl');
+    if (prev) prev.classList.remove('is-hl');
+    var el = preview.querySelector('.srt-block[data-i="' + i + '"]');
+    if (!el) return;
+    el.classList.add('is-hl');
+    var pr = preview.getBoundingClientRect();
+    var er = el.getBoundingClientRect();
+    preview.scrollTop += er.top - pr.top - 14;
+    var vr = preview.getBoundingClientRect();
+    if (vr.top < 0 || vr.bottom > window.innerHeight) {
+      preview.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+
+  function parseSummary(p, raw) {
+    if (!String(raw || '').trim()) return '';
+    if (!p.blocks.length) {
+      return 'SRT 형식을 인식하지 못했습니다. 번호 → 타임코드(00:00:01,000 --> 00:00:03,000) → 텍스트 순서인지 확인하세요.';
+    }
+    var r = rangeOf(p.blocks);
+    var s = '자막 ' + T.formatNumber(p.blocks.length) + '개 · ' + fmtTime(r.first) + ' ~ ' + fmtTime(r.last);
+    if (p.skipped) s += ' · 인식하지 못한 덩어리 ' + T.formatNumber(p.skipped) + '개는 건너뜁니다';
+    return s;
+  }
+
+  /* ---------- 시간 밀기 ---------- */
+  function computeShift() {
+    var sec = readSeconds(shiftInput, 0);
+    var delta = Math.round(sec.value * 1000);
+    var r = shiftBlocks(state.parsed1.blocks, delta);
+    return { blocks: r.blocks, clipped: r.clipped, delta: delta, note: sec.note };
+  }
+
+  function renderShift() {
+    var p = state.parsed1;
+    var r = computeShift();
+    var notes = [];
+    if (r.note) notes.push(r.note);
+    if (p.blocks.length) {
+      if (r.delta === 0) notes.push('이동할 시간을 넣으면 미리보기가 바로 바뀝니다. 지금은 원본과 같습니다.');
+      else notes.push('모든 타임코드를 ' + fmtDelta(r.delta) + ' 이동합니다.');
+      if (r.clipped) notes.push(T.formatNumber(r.clipped) + '개 자막이 0초 이전으로 내려가 00:00:00,000으로 맞췄습니다.');
+    } else {
+      notes.push('자막을 넣으면 밀린 결과가 바로 표시됩니다.');
+    }
+    shiftHint.textContent = notes.join(' ');
+    previewLabel.textContent = '시간 밀기 미리보기' +
+      (p.blocks.length ? ' · 자막 ' + T.formatNumber(p.blocks.length) + '개 · ' + (r.delta ? fmtDelta(r.delta) : '이동 없음') : '');
+    setPreview(r.blocks, 'renumber', '자막을 넣으면 밀린 결과가 여기에 표시됩니다.');
+  }
+
+  /* ---------- 합치기 ---------- */
+  function suggestOffset() {
+    var r = rangeOf(state.parsed1.blocks);
+    return r ? Math.ceil(r.last / 1000) : 0;
+  }
+
+  function computeMerge() {
+    var off = readSeconds(offsetInput, 0);
+    var delta = Math.round(off.value * 1000);
+    var sh = shiftBlocks(state.parsed2.blocks, delta);
+    return { blocks: state.parsed1.blocks.concat(sh.blocks), clipped: sh.clipped, delta: delta, note: off.note };
+  }
+
+  function renderMerge() {
+    var a = state.parsed1.blocks, b = state.parsed2.blocks;
+    var m = computeMerge();
+    var r = rangeOf(a);
+    var notes = [];
+    if (m.note) notes.push(m.note);
+    if (!a.length) notes.push('첫 번째 자막이 비어 있습니다.');
+    if (!b.length) notes.push('두 번째 자막을 넣으면 이어 붙인 결과가 표시됩니다.');
+    if (a.length && b.length && m.delta < r.last) {
+      notes.push('오프셋이 첫 번째 자막의 마지막 종료 시각(' + fmtTime(r.last) + ')보다 작아 시간이 겹칠 수 있습니다.');
+    }
+    if (m.clipped) notes.push(T.formatNumber(m.clipped) + '개 자막이 0초 이전으로 내려가 00:00:00,000으로 맞췄습니다.');
+    if (!notes.length) {
+      var sug = suggestOffset();
+      if (m.delta === sug * 1000) {
+        notes.push('첫 번째 자막이 ' + fmtTime(r.last) + '에 끝나므로 ' + sug + '초를 제안합니다. 직접 바꿀 수 있습니다.');
+      } else {
+        notes.push('두 번째 자막을 ' + fmtDelta(m.delta) + ' 밀어 이어 붙입니다. (자동 제안값 ' + sug + '초)');
+      }
+    }
+    mergeHint.textContent = notes.join(' ');
+    previewLabel.textContent = '합치기 미리보기' +
+      (m.blocks.length
+        ? ' · 첫 번째 ' + T.formatNumber(a.length) + '개 + 두 번째 ' + T.formatNumber(b.length) + '개 = ' +
+          T.formatNumber(m.blocks.length) + '개 · 두 번째 ' + fmtDelta(m.delta)
+        : '');
+    setPreview(m.blocks, 'renumber', '두 자막을 넣으면 이어 붙인 결과가 여기에 표시됩니다.');
+  }
+
+  /* ---------- 검사 ---------- */
+  function runCheck(blocks, limit) {
+    var issues = [];
+    var prevIndex = null;
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i], why = [];
+      var longest = 0, longestLine = 0;
+      for (var k = 0; k < b.lines.length; k++) {
+        var len = T.codePointLength(b.lines[k]);
+        if (len > longest) { longest = len; longestLine = k + 1; }
+      }
+      if (longest > limit) {
+        why.push('글자수 초과: ' + longestLine + '번째 줄 ' + T.formatNumber(longest) + '자 (상한 ' + limit + '자)');
+      }
+      var dur = b.end - b.start;
+      if (dur < 0) why.push('종료 시각이 시작 시각보다 앞섭니다');
+      else if (dur < 1000) why.push('표시 시간 ' + (dur / 1000).toFixed(2) + '초 (1초 미만)');
+      if (i > 0 && blocks[i - 1].end > b.start) {
+        why.push('이전 자막과 ' + ((blocks[i - 1].end - b.start) / 1000).toFixed(2) + '초 겹침');
+      }
+      var expected = i === 0 ? 1 : (prevIndex != null ? prevIndex + 1 : i + 1);
+      if (b.index == null) why.push('번호 없음 (기대 ' + expected + ')');
+      else if (b.index !== expected) why.push('번호 불연속: ' + b.index + ' (기대 ' + expected + ')');
+      prevIndex = b.index;
+      if (why.length) issues.push({ i: i, block: b, why: why });
+    }
+    return issues;
+  }
+
+  function issueLabel(it) {
+    return (it.block.index == null ? '번호 없음' : '#' + it.block.index) + ' · ' + T.formatNumber(it.i + 1) + '번째';
+  }
+
+  function showCheckResult() {
+    var p = state.parsed1;
+    if (!p.blocks.length) {
+      state.checkRan = false;
+      checkResult.classList.add('hidden');
+      return;
+    }
+    var lim = readLimit();
+    checkHint.textContent = lim.note || CHECK_HINT;
+    var issues = runCheck(p.blocks, lim.value);
+    var total = 0;
+    for (var i = 0; i < issues.length; i++) total += issues[i].why.length;
+    if (!issues.length) {
+      checkStatus.innerHTML = '<span class="status status-ok">문제 없음</span>' +
+        ' <span class="small text-muted">자막 ' + T.formatNumber(p.blocks.length) + '개 · 상한 ' + lim.value + '자</span>';
+      checkList.innerHTML = '';
+    } else {
+      checkStatus.innerHTML = '<span class="status status-bad">자막 ' + T.formatNumber(issues.length) + '개에서 문제 ' +
+        T.formatNumber(total) + '건</span>' +
+        ' <span class="small text-muted">항목을 누르면 미리보기에서 표시됩니다</span>';
+      var items = issues.slice(0, MAX_LIST).map(function (it) {
+        return '<li><button type="button" class="issue-btn" data-i="' + it.i + '">' +
+          '<strong>' + T.escapeHtml(issueLabel(it)) + '</strong>' +
+          '<span class="tc">' + fmtTime(it.block.start) + ' --&gt; ' + fmtTime(it.block.end) + '</span>' +
+          '<span class="why">' + T.escapeHtml(it.why.join(' / ')) + '</span>' +
+          '</button></li>';
+      });
+      if (issues.length > MAX_LIST) {
+        items.push('<li class="text-muted">외 ' + T.formatNumber(issues.length - MAX_LIST) + '개 자막은 목록에서 생략했습니다.</li>');
+      }
+      checkList.innerHTML = items.join('');
+    }
+    checkResult.classList.remove('hidden');
+  }
+
+  function renderCheck() {
+    var p = state.parsed1;
+    previewLabel.textContent = '검사 대상 미리보기' + (p.blocks.length ? ' · 자막 ' + T.formatNumber(p.blocks.length) + '개' : '');
+    setPreview(p.blocks, 'original', '자막을 넣고 "검사 실행"을 누르세요.');
+    if (state.checkRan) showCheckResult();
+    else checkResult.classList.add('hidden');
+  }
+
+  /* ---------- 공통 갱신 ---------- */
+  function refresh() {
+    state.parsed1 = parseSrt(text1.value);
+    state.parsed2 = parseSrt(text2.value);
+    parseHint1.textContent = parseSummary(state.parsed1, text1.value) ||
+      'SRT 파일을 열거나 자막 내용을 붙여넣으세요. "샘플 넣기"로 바로 써 볼 수 있습니다.';
+    parseHint2.textContent = parseSummary(state.parsed2, text2.value) || '이어 붙일 두 번째 자막을 넣으세요.';
+    if (!state.offsetTouched) offsetInput.value = String(suggestOffset());
+    var tab = tabs.value;
+    if (tab !== 'check') checkResult.classList.add('hidden');
+    if (tab === 'merge') renderMerge();
+    else if (tab === 'check') renderCheck();
+    else renderShift();
+  }
+
+  function setAction(msg, bad) {
+    actionHint.textContent = msg;
+    actionHint.className = 'hint ' + (bad ? 'text-bad' : 'text-ok');
+  }
+
+  function applyTab(name) {
+    btnMain.textContent = LABELS[name] || LABELS.shift;
+    actionHint.textContent = '';
+    actionHint.className = 'hint';
+    refresh();
+  }
+
+  var tabs = T.initTabs($('tabs'), applyTab);
+
+  /* ---------- 주 동작 버튼 ---------- */
+  btnMain.addEventListener('click', function () {
+    var tab = tabs.value;
+    if (tab === 'merge') {
+      if (!state.parsed1.blocks.length || !state.parsed2.blocks.length) {
+        setAction('첫 번째와 두 번째 자막을 모두 넣어야 합칠 수 있습니다.', true);
+        return;
+      }
+      var m = computeMerge();
+      T.downloadText('merged.srt', serialize(m.blocks, 'renumber'), 'text/plain');
+      setAction('merged.srt 파일을 내려받았습니다. 자막 ' + T.formatNumber(m.blocks.length) + '개.', false);
+    } else if (tab === 'check') {
+      if (!state.parsed1.blocks.length) {
+        setAction('검사할 자막이 없습니다. 먼저 SRT 파일을 열거나 내용을 붙여넣으세요.', true);
+        return;
+      }
+      state.checkRan = true;
+      showCheckResult();
+      setAction('검사를 마쳤습니다. 결과는 아래 목록에서 확인하세요.', false);
+    } else {
+      if (!state.parsed1.blocks.length) {
+        setAction('먼저 SRT 파일을 열거나 자막 내용을 붙여넣으세요.', true);
+        return;
+      }
+      var r = computeShift();
+      var name = baseName(state.name1) + '_shifted.srt';
+      T.downloadText(name, serialize(r.blocks, 'renumber'), 'text/plain');
+      setAction(name + ' 파일을 내려받았습니다. 타임코드 ' + fmtDelta(r.delta) + ' 이동.', false);
+    }
+  });
+
+  /* ---------- 입력 이벤트 ---------- */
+  var refreshSoon = T.debounce(refresh, 80);
+  text1.addEventListener('input', refreshSoon);
+  text2.addEventListener('input', refreshSoon);
+  shiftInput.addEventListener('input', refresh);
+  shiftInput.addEventListener('change', refresh);
+  offsetInput.addEventListener('input', function () { state.offsetTouched = true; refresh(); });
+  offsetInput.addEventListener('change', function () { state.offsetTouched = true; refresh(); });
+  maxInput.addEventListener('input', function () {
+    if (state.checkRan) showCheckResult();
+    else checkHint.textContent = readLimit().note || CHECK_HINT;
+  });
+
+  $('btn-offset-auto').addEventListener('click', function () {
+    state.offsetTouched = false;
+    refresh();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.shift-add'), function (btn) {
+    btn.addEventListener('click', function () {
+      var cur = readSeconds(shiftInput, 0).value;
+      var next = Math.round((cur + T.toNumber(btn.getAttribute('data-add'), 0)) * 1000) / 1000;
+      shiftInput.value = String(T.clamp(next, -MAX_ABS_SEC, MAX_ABS_SEC));
+      refresh();
+    });
+  });
+
+  $('btn-sample1').addEventListener('click', function () {
+    text1.value = SAMPLE1;
+    state.name1 = '';
+    file1.value = '';
+    fileHint1.textContent = FILE_HINT_1;
+    fileHint1.classList.remove('text-bad');
+    refresh();
+  });
+  $('btn-clear1').addEventListener('click', function () {
+    text1.value = '';
+    state.name1 = '';
+    file1.value = '';
+    fileHint1.textContent = FILE_HINT_1;
+    fileHint1.classList.remove('text-bad');
+    refresh();
+  });
+  $('btn-sample2').addEventListener('click', function () {
+    text2.value = SAMPLE2;
+    file2.value = '';
+    fileHint2.textContent = FILE_HINT_2;
+    fileHint2.classList.remove('text-bad');
+    refresh();
+  });
+  $('btn-clear2').addEventListener('click', function () {
+    text2.value = '';
+    file2.value = '';
+    fileHint2.textContent = FILE_HINT_2;
+    fileHint2.classList.remove('text-bad');
+    refresh();
+  });
+
+  bindFile(file1, fileHint1, text1, function (name) { state.name1 = name; });
+  bindFile(file2, fileHint2, text2);
+
+  checkList.addEventListener('click', function (e) {
+    var el = e.target;
+    while (el && el !== checkList && !(el.classList && el.classList.contains('issue-btn'))) el = el.parentNode;
+    if (!el || el === checkList) return;
+    highlightBlock(parseInt(el.getAttribute('data-i'), 10));
+  });
+
+  applyTab(tabs.value);
+})();
+</script>
+</body>
+</html>

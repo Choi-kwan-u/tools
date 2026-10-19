@@ -37,9 +37,9 @@
       <div class="chip-group">
         <p class="chip-group-title">말하기 속도</p>
         <div class="chips" data-name="speed">
-          <button type="button" class="chip" data-value="250">느리게 (분당 250자)</button>
-          <button type="button" class="chip is-active" data-value="300">보통 (분당 300자)</button>
-          <button type="button" class="chip" data-value="350">빠르게 (분당 350자)</button>
+          <button type="button" class="chip" data-value="250">느리게(분당 250자)</button>
+          <button type="button" class="chip is-active" data-value="300">보통(분당 300자)</button>
+          <button type="button" class="chip" data-value="350">빠르게(분당 350자)</button>
           <button type="button" class="chip" data-value="custom">직접 입력</button>
         </div>
       </div>
@@ -81,9 +81,9 @@
         </div>
         <p class="hint" id="minutes-hint">0.5~120분 사이로 입력하세요. 입력 즉시 계산됩니다.</p>
         <div class="result-grid">
-          <div class="result-item"><span class="label">느리게 (분당 250자)</span><span class="value" id="rev-slow">750자</span></div>
-          <div class="result-item"><span class="label">보통 (분당 300자)</span><span class="value" id="rev-normal">900자</span></div>
-          <div class="result-item"><span class="label">빠르게 (분당 350자)</span><span class="value" id="rev-fast">1,050자</span></div>
+          <div class="result-item"><span class="label">느리게(분당 250자)</span><span class="value" id="rev-slow">750자</span></div>
+          <div class="result-item"><span class="label">보통(분당 300자)</span><span class="value" id="rev-normal">900자</span></div>
+          <div class="result-item"><span class="label">빠르게(분당 350자)</span><span class="value" id="rev-fast">1,050자</span></div>
           <div class="result-item hidden" id="rev-custom-item"><span class="label" id="rev-custom-label">직접 입력</span><span class="value" id="rev-custom">0자</span></div>
         </div>
         <p class="reverse-range" id="rev-range">3분 발표라면 공백 제외 약 750~1,050자가 적당합니다.</p>
@@ -115,7 +115,7 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>발표 시간</th><th>느리게 (분당 250자)</th><th>보통 (분당 300자)</th><th>빠르게 (분당 350자)</th></tr>
+            <tr><th>발표 시간</th><th>느리게(분당 250자)</th><th>보통(분당 300자)</th><th>빠르게(분당 350자)</th></tr>
           </thead>
           <tbody>
             <tr><td>1분</td><td>250자</td><td>300자</td><td>350자</td></tr>
@@ -233,9 +233,10 @@
 
     bigEl.textContent = duration;
     emptyHint.classList.toggle('hidden', !c.isEmpty);
+    if (!c.isEmpty) { clearTimeout(copyHintTimer); copyHint.classList.add('hidden'); }
     vChars.textContent = T.formatNumber(c.withoutSpaces) + '자';
     vSentences.textContent = T.formatNumber(c.sentences) + '문장';
-    vWithSpaces.textContent = T.formatNumber(c.withSpaces) + '자';
+    vWithSpaces.textContent = T.formatNumber(c.isEmpty ? 0 : c.withSpaces) + '자';
     vRate.textContent = '분당 ' + T.formatNumber(r.rate) + '자';
 
     last = {
@@ -290,7 +291,7 @@
     var showCustom = r.custom && !r.invalid;
     revCustomItem.classList.toggle('hidden', !showCustom);
     if (showCustom) {
-      revCustomLabel.textContent = '직접 입력 (분당 ' + T.formatNumber(r.rate) + '자)';
+      revCustomLabel.textContent = '직접 입력(분당 ' + T.formatNumber(r.rate) + '자)';
       revCustom.textContent = T.formatNumber(Math.round(minutes * r.rate)) + '자';
     }
 
@@ -311,6 +312,7 @@
     }
     T.copyText(buildSummary(), copyBtn).then(function (ok) {
       if (!ok) showCopyHint('복사에 실패했습니다. 결과를 직접 선택해 복사해 주세요.');
+      else { clearTimeout(copyHintTimer); copyHint.classList.add('hidden'); }
     });
   });
 

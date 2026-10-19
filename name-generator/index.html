@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>소설 인물 이름 생성기 | 시대·성별·분위기별 한국 이름 추천</title>
+<meta name="description" content="출생 시대(1950년대~2010년대)·성별·분위기를 골라 소설·웹소설 인물의 한국 이름을 조합해 주는 무료 생성기입니다. 성씨 포함 여부와 개수를 정하고, 마음에 드는 이름은 고정한 채 다시 생성할 수 있습니다.">
+<link rel="canonical" href="https://choi-kwan-u.github.io/tools/name-generator/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="소설 인물 이름 생성기 | 시대·성별·분위기별 한국 이름 추천">
+<meta property="og:description" content="출생 시대(1950년대~2010년대)·성별·분위기를 골라 소설·웹소설 인물의 한국 이름을 조합해 주는 무료 생성기입니다. 성씨 포함 여부와 개수를 정하고, 마음에 드는 이름은 고정한 채 다시 생성할 수 있습니다.">
+<meta property="og:url" content="https://choi-kwan-u.github.io/tools/name-generator/">
+<meta property="og:site_name" content="글쓰기 도구함">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%233d3a35'/%3E%3Ctext x='50' y='70' font-size='56' text-anchor='middle' fill='white' font-family='sans-serif'%3E글%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+.name-card { padding: 14px 26px 20px; }
+.name-card .pin { font-size: 16px; padding: 6px; }
+.name-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.result-meta { font-size: 13px; color: var(--muted); margin: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="site-header"></div>
+  <main>
+    <h1>소설 인물 이름 생성기</h1>
+    <p class="lead">출생 시대·성별·분위기를 고르면 소설·웹소설 인물에게 어울리는 한국 이름을 조합해 드립니다.</p>
+
+    <section class="card">
+      <div class="chip-group">
+        <p class="chip-group-title">성별</p>
+        <div class="chips" data-name="gender">
+          <button type="button" class="chip is-active" data-value="any">무관</button>
+          <button type="button" class="chip" data-value="m">남</button>
+          <button type="button" class="chip" data-value="f">여</button>
+        </div>
+      </div>
+
+      <div class="chip-group">
+        <p class="chip-group-title">출생 시대</p>
+        <div class="chips" data-name="era">
+          <button type="button" class="chip is-active" data-value="all">전체</button>
+          <button type="button" class="chip" data-value="era1">1950~60년대</button>
+          <button type="button" class="chip" data-value="era2">1970~80년대</button>
+          <button type="button" class="chip" data-value="era3">1990~2000년대</button>
+          <button type="button" class="chip" data-value="era4">2010년대 이후</button>
+        </div>
+      </div>
+
+      <div class="chip-group">
+        <p class="chip-group-title">분위기</p>
+        <div class="chips" data-name="mood">
+          <button type="button" class="chip is-active" data-value="all">전체</button>
+          <button type="button" class="chip" data-value="plain">평범·흔한</button>
+          <button type="button" class="chip" data-value="classic">단정·고전적</button>
+          <button type="button" class="chip" data-value="soft">부드러운</button>
+          <button type="button" class="chip" data-value="strong">강한·차가운</button>
+        </div>
+      </div>
+
+      <div class="chip-group">
+        <p class="chip-group-title">성씨</p>
+        <div class="chips" data-name="surname">
+          <button type="button" class="chip is-active" data-value="on">포함</button>
+          <button type="button" class="chip" data-value="off">제외</button>
+        </div>
+      </div>
+
+      <div class="chip-group">
+        <p class="chip-group-title">생성 개수</p>
+        <div class="chips" data-name="count">
+          <button type="button" class="chip" data-value="5">5</button>
+          <button type="button" class="chip is-active" data-value="10">10</button>
+          <button type="button" class="chip" data-value="20">20</button>
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" id="btn-generate">이름 생성하기</button>
+
+      <div class="result">
+        <p class="result-label">생성된 이름 <span class="small text-muted">(카드를 누르면 복사 · ☆를 누르면 고정)</span></p>
+        <p class="result-meta" id="result-count" aria-live="polite"></p>
+        <p class="hint" id="gen-hint" aria-live="polite"></p>
+        <div class="name-grid" id="name-grid"></div>
+        <div class="btn-row">
+          <button type="button" class="btn-secondary" id="btn-regen">다시 생성</button>
+          <button type="button" class="btn-secondary" id="btn-copy-all">전체 복사</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot"><!-- AdSense 코드 자리 --></div>
+
+    <nav class="other-tools" aria-label="다른 도구">
+      <h2>다른 도구</h2>
+      <ul>
+        <li><a href="../speech-time/">발표 시간 계산기</a><span class="desc">글자수로 말하기 시간 계산</span></li>
+        <li><a href="../contest-length/">공모전 분량 체크기</a><span class="desc">원고지 매수 변환·분량 확인</span></li>
+        <li><a href="../srt-tool/">SRT 자막 도구</a><span class="desc">자막 시간 밀기·합치기·검사</span></li>
+        <li><a href="../reading-time/">읽는 시간 계산기</a><span class="desc">글자수로 읽는 시간 계산</span></li>
+      </ul>
+    </nav>
+
+    <article class="article">
+      <h2>이 생성기가 이름을 만드는 방식</h2>
+      <p>소설 인물 이름 생성기는 인공지능이나 외부 서버 없이, 브라우저 안에 내장된 글자 풀만으로 이름을 조합합니다. 성씨는 김·이·박·최·정처럼 실제로 많이 쓰이는 순서대로 가중치를 두어 뽑기 때문에, 여러 번 생성하면 흔한 성씨가 자주 나오고 드문 성씨는 가끔 섞입니다. 이름은 선택한 출생 시대와 성별에 맞는 앞글자 풀과 뒷글자 풀에서 한 글자씩 골라 붙이고, 열에 하나 정도는 외자 이름이 나오도록 했습니다. 분위기를 고르면 두 글자 가운데 하나 이상이 그 분위기 태그를 가진 조합만 남기고, 같은 글자가 반복되는 이름이나 성씨와 이름 첫 글자가 같은 이름, 한 묶음 안에서 겹치는 이름은 자동으로 걸러냅니다. 성별을 무관으로 두면 남녀 글자 풀을 함께 써서 섞어 보여 줍니다.</p>
+
+      <h2>세대별 이름 경향</h2>
+      <p>한국 이름은 태어난 시기에 따라 분위기가 뚜렷하게 달라집니다. 1950~60년대에 태어난 여성 이름에는 자·순·숙·희·옥 같은 글자가 많이 쓰였고, 남성 이름에는 수·호·식·철·영·근이 흔했습니다. 1970~80년대에는 여성 이름에 은·미·지·현·정·영·선, 남성 이름에 성·훈·석·민·우·진이 자주 보입니다. 1990~2000년대로 오면 여성 이름은 서·연·민·지·은·하·예, 남성 이름은 준·현·민·우·호·재처럼 부드러운 소리가 많아졌고, 2010년대 이후로는 서·하·윤·지·아·준·도·시·이처럼 받침이 적고 발음이 가벼운 글자가 남녀 모두에게 널리 쓰이고 있습니다.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>출생 시대</th><th>여성 이름에 많이 쓰인 글자</th><th>남성 이름에 많이 쓰인 글자</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1950~60년대</td><td>자·순·숙·희·옥·례·분</td><td>수·호·식·철·영·근</td></tr>
+            <tr><td>1970~80년대</td><td>은·미·지·현·정·영·선</td><td>성·훈·석·민·우·진</td></tr>
+            <tr><td>1990~2000년대</td><td>서·연·민·지·은·하·예</td><td>준·현·민·우·호·재</td></tr>
+            <tr><td>2010년대 이후</td><td>서·하·윤·지·아·율·린</td><td>준·도·시·이·하·윤</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>물론 이런 경향은 어디까지나 대체적인 흐름이며, 같은 시대에도 집안의 돌림자나 부모의 취향에 따라 전혀 다른 이름이 얼마든지 있었습니다. 작품 속 인물이 또래와 다른 이름을 가졌다면 그 자체가 인물의 배경을 설명하는 장치가 될 수도 있습니다.</p>
+
+      <h2>인물 이름을 지을 때 생각할 점</h2>
+      <ul>
+        <li><strong>주연끼리 첫 글자와 받침을 겹치지 않게</strong> 합니다. 민준과 민서, 서연과 서윤처럼 첫 글자가 같거나 소리가 비슷한 이름이 나란히 나오면 독자가 두 인물을 헷갈리기 쉽습니다. 주요 인물은 첫 글자의 자음도 서로 다르게 잡는 편이 좋습니다.</li>
+        <li><strong>발음이 편한지</strong> 소리 내어 읽어 봅니다. 대사 안에서 수십 번 불리는 이름이므로 혀가 꼬이는 조합, 성씨와 붙였을 때 어색한 소리가 나는 조합은 피하는 편이 안전합니다.</li>
+        <li><strong>시대 배경과 어울리는지</strong> 확인합니다. 1960년대를 배경으로 한 작품의 주인공이 2010년대식 이름을 갖고 있으면 독자는 작은 위화감을 느낍니다. 반대로 시대와 맞지 않는 이름을 일부러 써서 인물의 특별함을 드러내는 방법도 있습니다.</li>
+        <li><strong>실존 유명인과 겹치지 않는지</strong> 검색해 봅니다. 성씨까지 포함한 이름이 널리 알려진 인물과 같으면 독자가 그 사람을 떠올려 몰입이 깨질 수 있고, 부정적인 역할일 때는 불필요한 오해를 살 수도 있습니다.</li>
+        <li><strong>성씨 분포</strong>도 생각해 둡니다. 실제로는 김·이·박 세 성씨가 인구의 상당 부분을 차지하므로 등장인물 전원이 드문 성씨라면 오히려 비현실적으로 보입니다. 반대로 주연들의 성씨가 모두 같으면 구분이 어려우니, 주연은 서로 다른 성씨로 두고 조연과 단역에 흔한 성씨를 배분하는 식으로 균형을 맞추면 자연스럽습니다.</li>
+      </ul>
+
+      <h2>활용 팁</h2>
+      <p>마음에 드는 이름이 나오면 카드 오른쪽 위의 별 표시를 눌러 고정해 두세요. 고정된 이름은 다시 생성을 눌러도 그대로 남고 나머지 자리만 새 이름으로 채워집니다. 카드를 누르면 그 이름이 바로 복사되고, 전체 복사를 누르면 화면의 이름이 줄바꿈으로 이어진 목록으로 복사되므로 메모장이나 인물 설정 문서에 붙여 넣기 좋습니다. 성씨 제외 옵션은 이미 정해 둔 성씨에 이름만 붙이고 싶을 때, 출생 시대 옵션은 부모 세대와 자녀 세대의 이름을 구분해서 뽑고 싶을 때 유용합니다. 생성된 이름은 참고용 조합이므로 작품에 쓰기 전에 발음과 의미를 한 번 더 살펴보시기 바랍니다.</p>
+    </article>
+  </main>
+
+  <div class="ad-slot"><!-- AdSense 코드 자리 --></div>
+  <div id="site-footer"></div>
+</div>
+<script src="../js/common.js"></script>
+<script src="../js/names.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.Tools;
+  var DATA = window.NAME_DATA;
+  var ERA_KEYS = ['era1', 'era2', 'era3', 'era4'];
+  var GENDERS = ['m', 'f'];
+  var MAX_RETRY = 200;      /* 배치 내 중복·금지 조합 재시도 상한 */
+  var SINGLE_RATE = 0.1;    /* 외자 이름 확률 */
+  var MIN_CANDIDATES = 20;  /* 분위기 필터 후 후보가 이보다 적으면 전체로 완화 */
+  var DEFAULT_COUNT = 10;
+  var MAX_COUNT = 50;
+
+  var grid = document.getElementById('name-grid');
+  var hintEl = document.getElementById('gen-hint');
+  var countEl = document.getElementById('result-count');
+  var btnGen = document.getElementById('btn-generate');
+  var btnRegen = document.getElementById('btn-regen');
+  var btnCopyAll = document.getElementById('btn-copy-all');
+
+  /* ---------- 데이터 검증 ---------- */
+  function dataOk() {
+    var i, e;
+    if (!DATA || !DATA.surnames || !DATA.surnames.length || !DATA.eras || !DATA.singles) return false;
+    for (i = 0; i < ERA_KEYS.length; i++) {
+      e = DATA.eras[ERA_KEYS[i]];
+      if (!e || !e.m || !e.f) return false;
+      if (!e.m.first || !e.m.last || !e.f.first || !e.f.last) return false;
+      if (!e.m.first.length || !e.m.last.length || !e.f.first.length || !e.f.last.length) return false;
+    }
+    return true;
+  }
+  var ready = dataOk();
+
+  /* ---------- 옵션 ---------- */
+  var opts = { gender: 'any', era: 'all', mood: 'all', surname: 'on' };
+  function chipGroup(name) { return document.querySelector('[data-name="' + name + '"]'); }
+  /* 칩을 바꾸면 바로 다시 생성(고정 카드는 유지됨) */
+  T.initChips(chipGroup('gender'), function (v) { opts.gender = v; generate(); });
+  T.initChips(chipGroup('era'), function (v) { opts.era = v; generate(); });
+  T.initChips(chipGroup('mood'), function (v) { opts.mood = v; generate(); });
+  T.initChips(chipGroup('surname'), function (v) { opts.surname = v; generate(); });
+  var countChips = T.initChips(chipGroup('count'), generate);
+
+  function getCount() {
+    var n = T.toNumber(countChips.value, DEFAULT_COUNT);
+    if (!isFinite(n) || n < 1) n = DEFAULT_COUNT;
+    return Math.round(T.clamp(n, 1, MAX_COUNT));
+  }
+  function genderList() {
+    return (opts.gender === 'm' || opts.gender === 'f') ? [opts.gender] : GENDERS;
+  }
+  function eraList() {
+    return ERA_KEYS.indexOf(opts.era) !== -1 ? [opts.era] : ERA_KEYS;
+  }
+  function moodKey() {
+    return (opts.mood === 'plain' || opts.mood === 'classic' || opts.mood === 'soft' || opts.mood === 'strong') ? opts.mood : null;
+  }
+
+  /* ---------- 난수 헬퍼 ---------- */
+  function pickRandom(arr) {
+    if (!arr || !arr.length) return null;
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+  function weightOf(item) {
+    var w = Number(item && item.w);
+    return isFinite(w) && w > 0 ? w : 0;
+  }
+  function pickSurname() {
+    var list = DATA.surnames, total = 0, i, r;
+    for (i = 0; i < list.length; i++) total += weightOf(list[i]);
+    if (total <= 0) return String((pickRandom(list) || {}).s || '');
+    r = Math.random() * total;
+    for (i = 0; i < list.length; i++) {
+      r -= weightOf(list[i]);
+      if (r < 0) return String(list[i].s || '');
+    }
+    return String(list[list.length - 1].s || '');
+  }
+  function hasTag(entry, tag) {
+    return !!(entry && entry.tags && entry.tags.indexOf(tag) !== -1);
+  }
+  function validEntry(entry) {
+    return !!(entry && typeof entry.c === 'string' && entry.c.length === 1);
+  }
+
+  /* 시대 목록을 합친 글자 풀(여러 시대에 걸쳐 쓰인 글자는 그만큼 더 자주 뽑힘) */
+  function pool(gender, eras, part) {
+    var out = [], i, j, list;
+    for (i = 0; i < eras.length; i++) {
+      list = (DATA.eras[eras[i]] && DATA.eras[eras[i]][gender] && DATA.eras[eras[i]][gender][part]) || [];
+      for (j = 0; j < list.length; j++) if (validEntry(list[j])) out.push(list[j]);
+    }
+    return out;
+  }
+  function filterTag(list, tag) {
+    var out = [], i;
+    for (i = 0; i < list.length; i++) if (hasTag(list[i], tag)) out.push(list[i]);
+    return out;
+  }
+  function singlesFor(gender, mood) {
+    var list = (DATA.singles && DATA.singles[gender]) || [], out = [], i, e;
+    var eraPick = ERA_KEYS.indexOf(opts.era) !== -1 ? opts.era : null;
+    for (i = 0; i < list.length; i++) {
+      e = list[i];
+      if (!validEntry(e)) continue;
+      if (eraPick && e.eras && e.eras.length && e.eras.indexOf(eraPick) === -1) continue;
+      if (mood && !hasTag(e, mood)) continue;
+      out.push(e);
+    }
+    return out;
+  }
+
+  /* 현재 옵션으로 생성 컨텍스트(성별별 글자 풀) 구성 */
+  function buildContext() {
+    var eras = eraList(), mood = moodKey(), genders = genderList();
+    var ctx = { genders: genders, mood: mood, relaxed: false, pools: {} };
+    var i, g, F, L, Fm, Lm, candidates, useMood;
+    for (i = 0; i < genders.length; i++) {
+      g = genders[i];
+      F = pool(g, eras, 'first');
+      L = pool(g, eras, 'last');
+      Fm = mood ? filterTag(F, mood) : F;
+      Lm = mood ? filterTag(L, mood) : L;
+      candidates = mood ? (Fm.length * L.length + F.length * Lm.length - Fm.length * Lm.length) : F.length * L.length;
+      useMood = !!mood && candidates >= MIN_CANDIDATES;
+      if (mood && !useMood) ctx.relaxed = true;
+      ctx.pools[g] = { F: F, L: L, Fm: Fm, Lm: Lm, useMood: useMood, S: singlesFor(g, useMood ? mood : null) };
+    }
+    return ctx;
+  }
+
+  /* 이름(성 제외) 한 개 뽑기. 조건에 안 맞으면 null → 호출 쪽에서 재시도 */
+  function drawGiven(p, surnameChar) {
+    var s, first, last, wA, wB;
+    if (p.S.length && Math.random() < SINGLE_RATE) {
+      s = pickRandom(p.S);
+      if (s && (!surnameChar || s.c !== surnameChar)) return s.c;
+    }
+    if (p.useMood) {
+      wA = p.Fm.length * p.L.length;   /* 앞글자가 태그를 가진 조합 수 */
+      wB = p.F.length * p.Lm.length;   /* 뒷글자가 태그를 가진 조합 수 */
+      if (wA + wB <= 0) return null;
+      if (Math.random() * (wA + wB) < wA) { first = pickRandom(p.Fm); last = pickRandom(p.L); }
+      else { first = pickRandom(p.F); last = pickRandom(p.Lm); }
+    } else {
+      first = pickRandom(p.F);
+      last = pickRandom(p.L);
+    }
+    if (!first || !last) return null;
+    if (first.c === last.c) return null;                 /* 민민 같은 반복 회피 */
+    if (surnameChar && first.c === surnameChar) return null; /* 이이서 같은 조합 회피 */
+    return first.c + last.c;
+  }
+
+  /* n개 생성. usedKeys 는 이미 쓰인 전체 문자열 맵(고정 카드 포함) */
+  function generateBatch(n, usedKeys, ctx) {
+    var items = [], keys = {}, k, fails = 0, g, p, surname, given, full;
+    for (k in usedKeys) if (Object.prototype.hasOwnProperty.call(usedKeys, k)) keys[k] = true;
+    while (items.length < n && fails < MAX_RETRY) {
+      g = pickRandom(ctx.genders);
+      p = ctx.pools[g];
+      surname = opts.surname === 'off' ? '' : pickSurname();
+      given = p ? drawGiven(p, surname || null) : null;
+      if (!given) { fails++; continue; }
+      full = surname + given;
+      if (keys[full]) { fails++; continue; }
+      keys[full] = true;
+      items.push({ full: full, surname: surname, given: given, gender: g });
+    }
+    return { items: items, exhausted: items.length < n };
+  }
+
+  /* ---------- 카드 렌더링 ---------- */
+  function makeCard(item, pinned) {
+    var card = document.createElement('div');
+    var pin = document.createElement('button');
+    var nameEl = document.createElement('span');
+    var copied = document.createElement('span');
+    card.className = 'name-card' + (pinned ? ' is-pinned' : '');
+    card.setAttribute('data-name', item.full);
+    card.setAttribute('data-gender', item.gender);
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('title', (item.gender === 'f' ? '여자 이름' : '남자 이름') + ' · 누르면 복사');
+    card.setAttribute('aria-label', item.full + ' 복사');
+    pin.type = 'button';
+    pin.className = 'pin';
+    setPinState(pin, pinned);
+    nameEl.className = 'name';
+    nameEl.textContent = item.full;
+    copied.className = 'copied';
+    card.appendChild(pin);
+    card.appendChild(nameEl);
+    card.appendChild(copied);
+    return card;
+  }
+  function setPinState(pin, pinned) {
+    pin.textContent = pinned ? '★' : '☆';
+    pin.setAttribute('aria-pressed', pinned ? 'true' : 'false');
+    pin.setAttribute('aria-label', pinned ? '고정 해제' : '이 이름 고정');
+    pin.setAttribute('title', pinned ? '고정 해제' : '고정');
+  }
+  function allCards() {
+    return Array.prototype.slice.call(grid.querySelectorAll('.name-card'));
+  }
+  function updateMeta() {
+    var cards = allCards(), pinned = 0, i;
+    for (i = 0; i < cards.length; i++) if (cards[i].classList.contains('is-pinned')) pinned++;
+    if (!cards.length) { countEl.textContent = '생성된 이름이 없습니다.'; return; }
+    countEl.textContent = T.formatNumber(cards.length) + '개' + (pinned ? ' · 고정 ' + T.formatNumber(pinned) + '개' : '');
+  }
+
+  /* ---------- 생성(고정 카드는 유지하고 나머지만 교체) ---------- */
+  function generate() {
+    var n, ctx, cards, pinnedCount = 0, used = {}, batch, fresh, i, card, msgs = [];
+    if (!ready) return;
+    n = getCount();
+    ctx = buildContext();
+    cards = allCards();
+    for (i = 0; i < cards.length; i++) {
+      if (cards[i].classList.contains('is-pinned')) {
+        pinnedCount++;
+        used[cards[i].getAttribute('data-name') || ''] = true;
+      }
+    }
+    batch = generateBatch(Math.max(0, n - pinnedCount), used, ctx);
+    fresh = batch.items.slice();
+    for (i = 0; i < cards.length; i++) {
+      card = cards[i];
+      if (card.classList.contains('is-pinned')) continue;
+      if (fresh.length) grid.replaceChild(makeCard(fresh.shift(), false), card);
+      else grid.removeChild(card);
+    }
+    while (fresh.length) grid.appendChild(makeCard(fresh.shift(), false));
+
+    if (ctx.relaxed) msgs.push('선택한 분위기에 맞는 글자 조합이 적어 전체 글자로 생성했습니다.');
+    if (pinnedCount > n) msgs.push('고정된 이름(' + pinnedCount + '개)이 선택한 개수보다 많아 새 이름은 만들지 않았습니다.');
+    if (batch.exhausted) msgs.push('겹치지 않는 이름을 더 찾지 못해 ' + (pinnedCount + batch.items.length) + '개만 표시합니다.');
+    hintEl.textContent = msgs.join(' ');
+    updateMeta();
+  }
+
+  /* ---------- 복사 / 고정 ---------- */
+  function copyCard(card) {
+    var name = card.getAttribute('data-name') || '';
+    var copied = card.querySelector('.copied');
+    if (!name) return;
+    T.copyText(name).then(function (ok) {
+      if (!copied) return;
+      copied.textContent = ok ? '복사됨' : '복사 실패';
+      clearTimeout(card._copiedTimer);
+      card._copiedTimer = setTimeout(function () { copied.textContent = ''; }, 1500);
+    });
+  }
+  function togglePin(card) {
+    var on = !card.classList.contains('is-pinned');
+    var pin = card.querySelector('.pin');
+    card.classList.toggle('is-pinned', on);
+    if (pin) setPinState(pin, on);
+    updateMeta();
+  }
+  function findUp(el, cls) {
+    while (el && el !== grid) {
+      if (el.classList && el.classList.contains(cls)) return el;
+      el = el.parentNode;
+    }
+    return null;
+  }
+  grid.addEventListener('click', function (ev) {
+    var pin = findUp(ev.target, 'pin');
+    var card = findUp(ev.target, 'name-card');
+    if (!card) return;
+    if (pin) { ev.stopPropagation(); togglePin(card); return; }
+    copyCard(card);
+  });
+  grid.addEventListener('keydown', function (ev) {
+    var card;
+    if (ev.key !== 'Enter' && ev.key !== ' ' && ev.key !== 'Spacebar') return;
+    if (findUp(ev.target, 'pin')) return; /* 버튼 자체의 기본 동작에 맡김 */
+    card = findUp(ev.target, 'name-card');
+    if (!card) return;
+    ev.preventDefault();
+    copyCard(card);
+  });
+
+  function copyAll() {
+    var cards = allCards(), names = [], i, name;
+    for (i = 0; i < cards.length; i++) {
+      name = cards[i].getAttribute('data-name');
+      if (name) names.push(name);
+    }
+    if (!names.length) { hintEl.textContent = '복사할 이름이 없습니다. 먼저 이름을 생성하세요.'; return; }
+    T.copyText(names.join('\n'), btnCopyAll);
+  }
+
+  btnGen.addEventListener('click', generate);
+  btnRegen.addEventListener('click', generate);
+  btnCopyAll.addEventListener('click', copyAll);
+
+  /* ---------- 초기화 ---------- */
+  if (!ready) {
+    hintEl.textContent = '이름 데이터(js/names.js)를 불러오지 못해 생성할 수 없습니다. 페이지를 새로 고쳐 보세요.';
+    countEl.textContent = '생성된 이름이 없습니다.';
+    btnGen.disabled = true;
+    btnRegen.disabled = true;
+    btnCopyAll.disabled = true;
+  } else {
+    generate();
+  }
+})();
+</script>
+</body>
+</html>
