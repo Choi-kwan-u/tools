@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>읽는 시간 계산기 | 글자수로 읽는 데 걸리는 시간 계산</title>
+<meta name="description" content="글을 붙여 넣으면 공백 제외 글자수로 읽는 데 걸리는 시간을 바로 계산합니다. 천천히·보통·빠르게 속도 선택, 문단 수와 원고지 매수 표시, 블로그·브런치용 '읽는 시간 N분' 문구 복사 기능을 제공합니다.">
+<link rel="canonical" href="https://choi-kwan-u.github.io/tools/reading-time/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="읽는 시간 계산기 | 글자수로 읽는 데 걸리는 시간 계산">
+<meta property="og:description" content="글을 붙여 넣으면 공백 제외 글자수로 읽는 데 걸리는 시간을 바로 계산합니다. 천천히·보통·빠르게 속도 선택, 문단 수와 원고지 매수 표시, 블로그·브런치용 '읽는 시간 N분' 문구 복사 기능을 제공합니다.">
+<meta property="og:url" content="https://choi-kwan-u.github.io/tools/reading-time/">
+<meta property="og:site_name" content="글쓰기 도구함">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%233d3a35'/%3E%3Ctext x='50' y='70' font-size='56' text-anchor='middle' fill='white' font-family='sans-serif'%3E글%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  .result-item .value .approx { font-weight: 400; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="site-header"></div>
+  <main>
+    <h1>읽는 시간 계산기</h1>
+    <p class="lead">글을 붙여 넣으면 읽는 데 걸리는 시간을 바로 계산합니다.</p>
+
+    <section class="card">
+      <div class="field">
+        <label class="field-label" for="text">글 붙여넣기</label>
+        <textarea id="text" placeholder="읽는 시간을 계산할 글을 붙여 넣으세요. 입력하는 즉시 계산됩니다." spellcheck="false"></textarea>
+        <p class="hint">입력한 글은 서버로 전송되지 않고 브라우저 안에서만 계산됩니다.</p>
+      </div>
+
+      <div class="chip-group">
+        <p class="chip-group-title">읽기 속도</p>
+        <div class="chips" data-name="speed">
+          <button type="button" class="chip" data-value="500">천천히(분당 500자)</button>
+          <button type="button" class="chip is-active" data-value="700">보통(분당 700자)</button>
+          <button type="button" class="chip" data-value="900">빠르게(분당 900자)</button>
+          <button type="button" class="chip" data-value="custom">직접 입력</button>
+        </div>
+      </div>
+
+      <div class="field hidden" id="custom-field">
+        <label class="field-label" for="custom-speed">분당 글자수 (100~3,000)</label>
+        <div class="field-row">
+          <input type="text" id="custom-speed" class="inline-input" inputmode="numeric" placeholder="예: 650" autocomplete="off">
+          <span class="unit">자/분</span>
+        </div>
+        <p class="hint" id="custom-msg" aria-live="polite"></p>
+      </div>
+
+      <div class="result">
+        <p class="result-label">읽는 시간 · 분당 <span id="speed-label">700</span>자 기준</p>
+        <p class="result-big" id="result-big">0분</p>
+        <div class="result-grid">
+          <div class="result-item">
+            <span class="label">글자수 (공백 제외)</span>
+            <span class="value" id="r-chars">0자</span>
+          </div>
+          <div class="result-item">
+            <span class="label">문단 수</span>
+            <span class="value" id="r-paras">0개</span>
+          </div>
+          <div class="result-item">
+            <span class="label">원고지 매수 (200자)</span>
+            <span class="value" id="r-sheets">0매</span>
+          </div>
+          <div class="result-item">
+            <span class="label">정확한 시간</span>
+            <span class="value" id="r-exact">0분 0초</span>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" id="copy-btn">'읽는 시간 N분' 문구 복사</button>
+      <p class="hint hidden" id="copy-msg" role="status" aria-live="polite"></p>
+    </section>
+
+    <div class="ad-slot"><!-- AdSense 코드 자리 --></div>
+
+    <nav class="other-tools" aria-label="다른 도구">
+      <h2>다른 도구</h2>
+      <ul>
+        <li><a href="../speech-time/">발표 시간 계산기</a><span class="desc">글자수로 말하기 시간 계산</span></li>
+        <li><a href="../contest-length/">공모전 분량 체크기</a><span class="desc">원고지 매수 변환·분량 확인</span></li>
+        <li><a href="../srt-tool/">SRT 자막 도구</a><span class="desc">자막 시간 밀기·합치기·검사</span></li>
+        <li><a href="../name-generator/">소설 인물 이름 생성기</a><span class="desc">시대·성별·분위기별 한국 이름</span></li>
+      </ul>
+    </nav>
+
+    <article class="article">
+      <h2>읽는 시간은 어떻게 계산하나요?</h2>
+      <p>이 계산기는 입력한 글에서 공백과 줄바꿈을 뺀 글자수를 세고, 그 수를 분당 읽는 글자수로 나눠 읽는 시간을 구합니다. 예를 들어 공백 제외 2,100자인 글을 보통 속도(분당 700자)로 읽으면 3분이 걸립니다. 결과는 분 단위로 올림해서 보여 주므로 1,500자(약 2분 9초)는 "3분"으로 표시되고, 아주 짧은 글도 최소 1분으로 표시됩니다. 초 단위까지 알고 싶다면 결과 아래의 "정확한 시간" 항목을 확인하세요.</p>
+      <p>글자수와 함께 문단 수와 200자 원고지 매수도 표시합니다. 원고지 매수는 한 줄 20자, 한 매 10줄을 기준으로 문단마다 줄을 새로 세어 계산하므로, 단순히 글자수를 200으로 나눈 값보다 조금 큽니다. 입력한 글은 서버로 전송되지 않고 브라우저 안에서만 계산되므로 공개 전 원고를 붙여 넣어도 괜찮습니다.</p>
+
+      <h2>한국어 성인의 묵독 속도</h2>
+      <p>소리 내지 않고 눈으로 읽는 묵독 속도는 사람마다 차이가 큽니다. 한국어 성인은 일반적으로 분당 500~900자 정도를 읽는 것으로 알려져 있어, 이 계산기는 천천히(분당 500자)·보통(분당 700자)·빠르게(분당 900자) 세 단계를 기본으로 제공합니다. 글의 종류와 난이도에 따라서도 속도가 달라집니다. 줄거리를 따라가는 소설이나 가벼운 에세이는 빠르게 읽히지만, 낯선 용어가 많은 전문 서적이나 숫자가 많은 보고서는 같은 글자수라도 훨씬 오래 걸립니다. 스마트폰 화면에서 훑어 읽는 독자는 더 빠르게 지나가는 경향이 있으므로, 블로그처럼 가볍게 읽히는 글이라면 보통이나 빠르게를, 설명이 촘촘한 글이라면 천천히를 고르는 편이 실제와 가깝습니다. 독자층의 속도를 알고 있다면 직접 입력으로 분당 글자수를 지정할 수 있습니다.</p>
+
+      <h2>글 길이별 읽는 시간</h2>
+      <p>공백 제외 글자수에 따라 읽는 시간이 어떻게 달라지는지 정리한 표입니다. 계산기는 분 단위로 올림한 값을 크게 보여 주고, 아래 표에는 초 단위까지 적었습니다.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>글자수(공백 제외)</th><th>천천히(500자)</th><th>보통(700자)</th><th>빠르게(900자)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1,000자</td><td>2분 0초</td><td>1분 26초</td><td>1분 7초</td></tr>
+            <tr><td>2,000자</td><td>4분 0초</td><td>2분 51초</td><td>2분 13초</td></tr>
+            <tr><td>3,000자</td><td>6분 0초</td><td>4분 17초</td><td>3분 20초</td></tr>
+            <tr><td>5,000자</td><td>10분 0초</td><td>7분 9초</td><td>5분 33초</td></tr>
+            <tr><td>7,000자</td><td>14분 0초</td><td>10분 0초</td><td>7분 47초</td></tr>
+            <tr><td>10,000자</td><td>20분 0초</td><td>14분 17초</td><td>11분 7초</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>온라인 글의 적정 길이</h2>
+      <p>블로그 글은 일반적으로 공백 제외 1,500~3,000자, 읽는 시간으로는 3~5분 정도가 끝까지 읽히기 쉬운 길이로 꼽힙니다. 검색으로 들어온 독자는 원하는 답을 빨리 찾고 싶어 하므로 소제목으로 구간을 나누고 핵심을 앞쪽에 두는 것이 좋습니다. 브런치처럼 에세이 성격이 강한 글은 2,000~4,000자(5분 안팎)까지도 무리 없이 읽히지만, 한 편에 한 가지 주제를 담아 호흡을 유지하는 편이 좋습니다. 뉴스레터는 메일함에서 바로 읽히는 매체이므로 1,000~2,000자, 읽는 시간 2~3분 정도로 짧게 쓰고 긴 내용은 링크로 넘기는 방식이 흔히 쓰입니다. 물론 이는 평균적인 경향일 뿐이며, 주제와 독자에 따라 적정 길이는 얼마든지 달라질 수 있습니다.</p>
+
+      <h2>"읽는 시간 N분" 문구 활용법</h2>
+      <p>글 첫머리에 "읽는 시간 3분"처럼 예상 시간을 적어 두면 독자가 지금 읽을지, 나중에 저장해 둘지 바로 판단할 수 있어 이탈을 줄이는 데 도움이 됩니다. 블로그 본문 상단, 브런치 글 소개, 뉴스레터 미리보기 문장, SNS에 링크를 공유할 때의 한 줄 설명에 넣기 좋습니다. 복사 버튼을 누르면 현재 결과에 맞는 문구가 클립보드에 복사되므로, 글을 고칠 때마다 다시 계산해서 붙여 넣으세요. 발표용 원고라면 묵독이 아니라 말하기 속도로 계산해야 하므로 발표 시간 계산기를, 원고지 매수가 중요한 공모전 원고라면 공모전 분량 체크기를 함께 활용하세요.</p>
+    </article>
+  </main>
+
+  <div class="ad-slot"><!-- AdSense 코드 자리 --></div>
+  <div id="site-footer"></div>
+</div>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var DEFAULT_CPM = 700;   // 보통 속도(분당 글자수)
+  var MIN_CPM = 100;
+  var MAX_CPM = 3000;
+
+  var textEl = document.getElementById('text');
+  var chipsEl = document.querySelector('[data-name="speed"]');
+  var customField = document.getElementById('custom-field');
+  var customInput = document.getElementById('custom-speed');
+  var customMsg = document.getElementById('custom-msg');
+  var speedLabel = document.getElementById('speed-label');
+  var bigEl = document.getElementById('result-big');
+  var charsEl = document.getElementById('r-chars');
+  var parasEl = document.getElementById('r-paras');
+  var sheetsEl = document.getElementById('r-sheets');
+  var exactEl = document.getElementById('r-exact');
+  var copyBtn = document.getElementById('copy-btn');
+  var copyMsg = document.getElementById('copy-msg');
+
+  var current = { isEmpty: true, minutes: 0 };
+  var copyBusy = false;      // "복사됨 ✓" 표시 중인지
+  var copyIdleTimer = null;  // 표시가 끝난 뒤 라벨을 최신 결과로 되돌리는 타이머
+
+  /* 소수 첫째 자리까지 천 단위 구분해서 표시 (예: 1234.5 → "1,234.5", 4 → "4.0") */
+  function formatOneDecimal(n) {
+    var tenths = Math.round((Number(n) || 0) * 10);
+    var whole = Math.floor(tenths / 10);
+    return Tools.formatNumber(whole) + '.' + (tenths % 10);
+  }
+
+  /* 현재 선택된 읽기 속도(분당 글자수)와 안내 문구 */
+  function resolveSpeed() {
+    var v = speed.value;
+    if (v !== 'custom') {
+      return { cpm: Tools.toNumber(v, DEFAULT_CPM), msg: '', bad: false };
+    }
+    var raw = customInput.value.replace(/,/g, '').trim();
+    if (raw === '') {
+      return {
+        cpm: DEFAULT_CPM,
+        msg: '분당 글자수를 입력하세요. 입력 전에는 보통 속도(분당 700자)로 계산합니다.',
+        bad: false
+      };
+    }
+    var n = /^\d+(\.\d+)?$/.test(raw) ? Number(raw) : NaN;
+    if (!isFinite(n) || n < MIN_CPM || n > MAX_CPM) {
+      return {
+        cpm: DEFAULT_CPM,
+        msg: '100~3,000 사이의 숫자만 입력할 수 있습니다. 보통 속도(분당 700자)로 계산합니다.',
+        bad: true
+      };
+    }
+    return { cpm: n, msg: '분당 ' + Tools.formatNumber(n) + '자 기준으로 계산합니다.', bad: false };
+  }
+
+  function phrase() {
+    return '읽는 시간 ' + Tools.formatNumber(current.minutes) + '분';
+  }
+
+  function showCopyMsg(text, bad) {
+    copyMsg.textContent = text || '';
+    copyMsg.classList.toggle('hidden', !text);
+    copyMsg.classList.toggle('text-bad', !!bad);
+  }
+
+  /* 주 동작 버튼 라벨을 현재 결과에 맞춰 갱신. 복사 중("복사됨 ✓" 표시 중)에는 라벨을 건드리지 않고
+     data-orig-label 만 갱신해 Tools.copyText 가 최신 라벨로 복원하도록 한다. */
+  function syncCopyButton() {
+    var label = current.isEmpty ? "'읽는 시간 N분' 문구 복사" : "'" + phrase() + "' 문구 복사";
+    copyBtn.setAttribute('data-orig-label', label);
+    if (!copyBusy) copyBtn.textContent = label;
+  }
+
+  function update() {
+    var c = Tools.count(textEl.value);
+    var sp = resolveSpeed();
+    var chars = c.withoutSpaces;
+    var minutes = 0;
+    var seconds = 0;
+
+    if (chars > 0) {
+      seconds = chars / sp.cpm * 60;
+      minutes = Math.max(1, Math.ceil(chars / sp.cpm));
+    }
+
+    speedLabel.textContent = Tools.formatNumber(sp.cpm);
+    customMsg.textContent = sp.msg;
+    customMsg.classList.toggle('text-bad', sp.bad);
+
+    bigEl.textContent = Tools.formatNumber(minutes) + '분';
+    charsEl.textContent = Tools.formatNumber(chars) + '자';
+    parasEl.textContent = Tools.formatNumber(c.paragraphs) + '개';
+    exactEl.textContent = Tools.formatDuration(seconds);
+
+    if (chars > 0) {
+      sheetsEl.textContent = '';
+      sheetsEl.appendChild(document.createTextNode(Tools.formatNumber(c.manuscriptSheets) + '매 '));
+      var approx = document.createElement('span');
+      approx.className = 'approx';
+      approx.textContent = '(약 ' + formatOneDecimal(c.manuscriptSheetsExact) + '매)';
+      sheetsEl.appendChild(approx);
+    } else {
+      sheetsEl.textContent = '0매';
+    }
+
+    current = { isEmpty: chars === 0, minutes: minutes };
+    syncCopyButton();
+  }
+
+  var speed = Tools.initChips(chipsEl, function (value) {
+    var isCustom = value === 'custom';
+    customField.classList.toggle('hidden', !isCustom);
+    update();
+    if (isCustom) customInput.focus();
+  });
+
+  textEl.addEventListener('input', function () {
+    showCopyMsg('');
+    update();
+  });
+  customInput.addEventListener('input', update);
+
+  copyBtn.addEventListener('click', function () {
+    if (current.isEmpty) {
+      showCopyMsg('먼저 글을 입력하세요. 글자수에 맞는 "읽는 시간 N분" 문구를 만들어 드립니다.', true);
+      textEl.focus();
+      return;
+    }
+    var text = phrase();
+    copyBusy = true;
+    clearTimeout(copyIdleTimer);
+    Tools.copyText(text, copyBtn).then(function (ok) {
+      if (ok) {
+        showCopyMsg('"' + text + '" 문구를 복사했습니다. 블로그·브런치 글 첫머리에 붙여 넣으세요.', false);
+      } else {
+        showCopyMsg('복사하지 못했습니다. 아래 문구를 직접 선택해 복사하세요: ' + text, true);
+      }
+      /* 연달아 눌러도 마지막 클릭 기준으로 한 번만 되돌린다(Tools.copyText 의 1.5초 표시보다 조금 뒤). */
+      clearTimeout(copyIdleTimer);
+      copyIdleTimer = setTimeout(function () {
+        copyBusy = false;
+        syncCopyButton();
+      }, 1600);
+    });
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

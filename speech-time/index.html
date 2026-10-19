@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>발표 시간 계산기 | 글자수로 말하기 시간 · 3분 스피치 분량 계산</title>
+<meta name="description" content="발표 원고를 붙여 넣으면 공백 제외 글자수와 말하기 속도(분당 250·300·350자)로 예상 발표 시간을 바로 계산합니다. 1분·3분·5분 스피치에 필요한 글자수 역산과 문장 사이 호흡 가산 옵션도 제공합니다.">
+<link rel="canonical" href="https://choi-kwan-u.github.io/tools/speech-time/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="발표 시간 계산기 | 글자수로 말하기 시간 · 3분 스피치 분량 계산">
+<meta property="og:description" content="발표 원고를 붙여 넣으면 공백 제외 글자수와 말하기 속도(분당 250·300·350자)로 예상 발표 시간을 바로 계산합니다. 1분·3분·5분 스피치에 필요한 글자수 역산과 문장 사이 호흡 가산 옵션도 제공합니다.">
+<meta property="og:url" content="https://choi-kwan-u.github.io/tools/speech-time/">
+<meta property="og:site_name" content="글쓰기 도구함">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%233d3a35'/%3E%3Ctext x='50' y='70' font-size='56' text-anchor='middle' fill='white' font-family='sans-serif'%3E글%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+.reverse-title { font-size: 15px; font-weight: 700; margin: 0 0 10px; }
+.reverse-range { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+.hint.text-bad { color: var(--bad); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="site-header"></div>
+  <main>
+    <h1>발표 시간 계산기</h1>
+    <p class="lead">원고를 붙여 넣으면 글자수와 말하기 속도로 예상 발표 시간을 바로 계산합니다.</p>
+
+    <section class="card">
+      <div class="field">
+        <label class="field-label" for="text">발표 원고</label>
+        <textarea id="text" placeholder="발표·낭독할 원고를 붙여 넣으세요. 입력하는 즉시 예상 시간이 계산되며, 내용은 서버로 전송되지 않습니다." spellcheck="false"></textarea>
+      </div>
+
+      <div class="chip-group">
+        <p class="chip-group-title">말하기 속도</p>
+        <div class="chips" data-name="speed">
+          <button type="button" class="chip" data-value="250">느리게 (분당 250자)</button>
+          <button type="button" class="chip is-active" data-value="300">보통 (분당 300자)</button>
+          <button type="button" class="chip" data-value="350">빠르게 (분당 350자)</button>
+          <button type="button" class="chip" data-value="custom">직접 입력</button>
+        </div>
+      </div>
+
+      <div class="field hidden" id="custom-field">
+        <label class="field-label" for="rate">분당 글자수 직접 입력</label>
+        <div class="field-row">
+          <input type="number" id="rate" class="inline-input" value="300" min="50" max="1000" step="10" inputmode="numeric" placeholder="300">
+          <span class="unit">자/분</span>
+        </div>
+        <p class="hint" id="rate-hint">분당 50~1,000자 사이로 입력하세요.</p>
+      </div>
+
+      <label class="checkbox-row">
+        <input type="checkbox" id="breath">
+        <span>문장 사이 호흡 가산 (문장당 +0.5초)</span>
+      </label>
+
+      <div class="result" aria-live="polite">
+        <p class="result-label">예상 소요 시간</p>
+        <p class="result-big" id="result-big">0분 0초</p>
+        <p class="hint" id="empty-hint">원고를 입력하면 예상 소요 시간이 바로 계산됩니다.</p>
+        <div class="result-grid">
+          <div class="result-item"><span class="label">공백 제외 글자수</span><span class="value" id="v-chars">0자</span></div>
+          <div class="result-item"><span class="label">문장 수</span><span class="value" id="v-sentences">0문장</span></div>
+          <div class="result-item"><span class="label">공백 포함 글자수</span><span class="value" id="v-with-spaces">0자</span></div>
+          <div class="result-item"><span class="label">적용 속도</span><span class="value" id="v-rate">분당 300자</span></div>
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" id="copy-btn">결과 복사</button>
+      <p class="hint hidden" id="copy-hint">복사할 결과가 없습니다. 먼저 원고를 입력하세요.</p>
+
+      <div class="result" id="reverse">
+        <h2 class="reverse-title">N분 발표에 필요한 글자수</h2>
+        <div class="field-row">
+          <input type="number" id="minutes" class="inline-input" value="3" min="0.5" max="120" step="0.5" inputmode="decimal" aria-label="발표 시간(분)">
+          <span class="unit">분 발표</span>
+        </div>
+        <p class="hint" id="minutes-hint">0.5~120분 사이로 입력하세요. 입력 즉시 계산됩니다.</p>
+        <div class="result-grid">
+          <div class="result-item"><span class="label">느리게 (분당 250자)</span><span class="value" id="rev-slow">750자</span></div>
+          <div class="result-item"><span class="label">보통 (분당 300자)</span><span class="value" id="rev-normal">900자</span></div>
+          <div class="result-item"><span class="label">빠르게 (분당 350자)</span><span class="value" id="rev-fast">1,050자</span></div>
+          <div class="result-item hidden" id="rev-custom-item"><span class="label" id="rev-custom-label">직접 입력</span><span class="value" id="rev-custom">0자</span></div>
+        </div>
+        <p class="reverse-range" id="rev-range">3분 발표라면 공백 제외 약 750~1,050자가 적당합니다.</p>
+      </div>
+    </section>
+
+    <div class="ad-slot"><!-- AdSense 코드 자리 --></div>
+
+    <nav class="other-tools" aria-label="다른 도구">
+      <h2>다른 도구</h2>
+      <ul>
+        <li><a href="../reading-time/">읽는 시간 계산기</a><span class="desc">글자수로 읽는 시간 계산</span></li>
+        <li><a href="../contest-length/">공모전 분량 체크기</a><span class="desc">원고지 매수 변환·분량 확인</span></li>
+        <li><a href="../srt-tool/">SRT 자막 도구</a><span class="desc">자막 시간 밀기·합치기·검사</span></li>
+        <li><a href="../name-generator/">소설 인물 이름 생성기</a><span class="desc">시대·성별·분위기별 한국 이름</span></li>
+      </ul>
+    </nav>
+
+    <article class="article">
+      <h2>한국어 말하기 속도는 얼마나 될까요</h2>
+      <p>발표나 낭독에 걸리는 시간은 원고의 글자수를 말하기 속도로 나누면 대략 짐작할 수 있습니다. 한국어 성인이 또박또박 말할 때의 속도는 일반적으로 1분에 공백 제외 250~350자 정도로 알려져 있습니다. 뉴스 앵커나 아나운서는 훈련을 받은 사람들이라 평균적으로 분당 330~370자 안팎으로 비교적 빠르게 읽는 편이고, 청중을 바라보며 설명하는 발표나 강연은 그보다 느린 분당 250~300자 수준이 많습니다. 동화 구연이나 시 낭송처럼 감정을 실어 천천히 읽는 상황이라면 분당 200자 안팎까지 내려가기도 합니다.</p>
+      <p>이 계산기는 세 가지 기준 속도를 제공합니다. '느리게(분당 250자)'는 처음 발표하는 분이나 청중이 메모를 해야 하는 교육 상황에, '보통(분당 300자)'은 일반적인 발표·자기소개·축사에, '빠르게(분당 350자)'는 뉴스 원고나 정보 전달 위주의 영상 내레이션에 어울립니다. 평소 자신의 속도를 알고 싶다면 원고 한 단락을 소리 내어 읽으며 시간을 재고, 글자수를 걸린 시간(분)으로 나눈 값을 '직접 입력'에 넣어 보세요.</p>
+
+      <h2>계산 방식</h2>
+      <p>예상 소요 시간은 <strong>공백 제외 글자수 ÷ 분당 글자수 × 60초</strong>로 구합니다. 예를 들어 공백 제외 900자 원고를 보통 속도로 읽으면 900 ÷ 300 × 60 = 180초, 즉 3분 0초가 나옵니다. 띄어쓰기는 소리로 발음하지 않으므로 공백을 뺀 글자수를 기준으로 삼습니다. '호흡 가산'을 켜면 문장 하나가 끝날 때마다 0.5초를 더합니다. 실제 발표에서는 문장 사이에 숨을 고르거나 청중을 바라보는 짧은 멈춤이 생기기 때문에, 문장이 짧고 많은 원고일수록 이 옵션을 켠 결과가 실제와 더 가깝습니다. 슬라이드를 넘기는 시간, 질문을 받는 시간, 웃음이나 박수로 흐름이 끊기는 시간은 포함되지 않으니 따로 여유를 두세요.</p>
+
+      <h2>1분·3분·5분 스피치 글자수 표</h2>
+      <p>자주 쓰는 발표 길이별로 필요한 글자수(공백 제외)를 정리했습니다. 아래 표의 '보통' 열을 기준으로 원고를 쓰고, 연습하면서 '느리게'와 '빠르게' 사이에 들어오는지 확인하면 됩니다.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>발표 시간</th><th>느리게 (분당 250자)</th><th>보통 (분당 300자)</th><th>빠르게 (분당 350자)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1분</td><td>250자</td><td>300자</td><td>350자</td></tr>
+            <tr><td>2분</td><td>500자</td><td>600자</td><td>700자</td></tr>
+            <tr><td>3분</td><td>750자</td><td>900자</td><td>1,050자</td></tr>
+            <tr><td>5분</td><td>1,250자</td><td>1,500자</td><td>1,750자</td></tr>
+            <tr><td>10분</td><td>2,500자</td><td>3,000자</td><td>3,500자</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>3분 스피치라면 공백 제외 약 750~1,050자, 200자 원고지로 치면 대략 4~6매 분량입니다. 처음 원고를 쓸 때는 목표 시간의 90% 정도 분량으로 준비하는 편이 안전합니다. 긴장하면 말이 빨라지는 분도 있지만, 반대로 생각이 끊겨 말이 느려지거나 즉석에서 덧붙이는 말이 늘어나 시간이 넘치는 경우가 훨씬 많기 때문입니다.</p>
+
+      <h2>발표 연습 팁</h2>
+      <ol>
+        <li><strong>반드시 소리 내어 읽으며 시간을 재세요.</strong> 눈으로 읽는 속도는 말하는 속도보다 훨씬 빠르기 때문에 묵독으로는 발표 시간을 가늠할 수 없습니다. 계산기 결과를 출발점으로 삼고, 실제로 재 본 시간으로 보정하세요.</li>
+        <li><strong>한 문장은 짧게, 한 문장에 한 가지 내용만 담으세요.</strong> 말로 전달할 때는 글보다 문장이 짧아야 듣는 사람이 따라옵니다. 40자를 넘는 문장은 둘로 나누는 것이 좋습니다.</li>
+        <li><strong>숫자, 고유명사, 핵심 주장 앞에서는 속도를 늦추세요.</strong> 중요한 부분을 천천히 말하면 강조 효과가 생기고 청중이 받아 적을 시간도 생깁니다. 원고에 '/' 같은 표시로 멈출 곳을 미리 적어 두면 도움이 됩니다.</li>
+        <li><strong>첫 문장과 마지막 문장은 외우세요.</strong> 시작과 끝이 매끄러우면 중간에 조금 더듬어도 전체 인상이 흔들리지 않습니다. 나머지는 요점만 적은 메모를 보며 말하는 연습을 하세요.</li>
+        <li><strong>녹음해서 들어 보세요.</strong> 스마트폰 녹음 기능만으로도 '어', '음' 같은 군말, 말끝 흐림, 지나치게 빠른 구간을 쉽게 찾을 수 있습니다. 한 번에 한 가지씩만 고치는 것이 효과적입니다.</li>
+        <li><strong>제한 시간보다 10% 정도 짧게 준비하세요.</strong> 질문이나 돌발 상황에 대비한 여유이기도 하고, 시간이 남으면 마무리 인사를 여유 있게 할 수 있습니다.</li>
+        <li><strong>실제와 같은 환경에서 서서 연습하세요.</strong> 앉아서 읽을 때와 서서 청중을 바라보며 말할 때는 호흡과 속도가 달라집니다. 가능하면 발표 장소와 비슷한 공간에서 최소 세 번은 처음부터 끝까지 끊지 않고 연습해 보세요.</li>
+      </ol>
+
+      <h2>이런 상황에서 활용해 보세요</h2>
+      <p>학교 수업의 3분 스피치, 면접 1분 자기소개, 결혼식 축사나 송별회 인사말, 유튜브 영상의 내레이션 대본, 팟캐스트 오프닝 멘트, 학회 발표의 구두 원고 등 정해진 시간 안에 말을 끝내야 하는 모든 상황에 쓸 수 있습니다. 반대로 '5분 안에 끝내 달라'는 요청을 받았을 때는 역산 기능으로 필요한 글자수를 먼저 확인하고 원고를 쓰기 시작하면 분량 조절이 훨씬 수월해집니다. 입력한 글은 서버로 전송되지 않고 브라우저 안에서만 계산되므로 공개 전 원고를 넣어도 안전합니다.</p>
+    </article>
+  </main>
+
+  <div class="ad-slot"><!-- AdSense 코드 자리 --></div>
+  <div id="site-footer"></div>
+</div>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.Tools;
+
+  var DEFAULT_RATE = 300;
+  var RATE_MIN = 50, RATE_MAX = 1000;
+  var DEFAULT_MINUTES = 3;
+  var MIN_MINUTES = 0.5, MAX_MINUTES = 120;
+  var BREATH_SECONDS = 0.5;
+  var PRESETS = [
+    { label: '느리게', rate: 250 },
+    { label: '보통', rate: 300 },
+    { label: '빠르게', rate: 350 }
+  ];
+
+  var textEl = document.getElementById('text');
+  var customField = document.getElementById('custom-field');
+  var rateEl = document.getElementById('rate');
+  var rateHint = document.getElementById('rate-hint');
+  var breathEl = document.getElementById('breath');
+  var bigEl = document.getElementById('result-big');
+  var emptyHint = document.getElementById('empty-hint');
+  var vChars = document.getElementById('v-chars');
+  var vSentences = document.getElementById('v-sentences');
+  var vWithSpaces = document.getElementById('v-with-spaces');
+  var vRate = document.getElementById('v-rate');
+  var copyBtn = document.getElementById('copy-btn');
+  var copyHint = document.getElementById('copy-hint');
+  var minutesEl = document.getElementById('minutes');
+  var minutesHint = document.getElementById('minutes-hint');
+  var revSlow = document.getElementById('rev-slow');
+  var revNormal = document.getElementById('rev-normal');
+  var revFast = document.getElementById('rev-fast');
+  var revCustomItem = document.getElementById('rev-custom-item');
+  var revCustomLabel = document.getElementById('rev-custom-label');
+  var revCustom = document.getElementById('rev-custom');
+  var revRange = document.getElementById('rev-range');
+
+  var RATE_HINT_OK = '분당 50~1,000자 사이로 입력하세요.';
+  var RATE_HINT_BAD = '분당 50~1,000자 사이의 숫자를 입력하세요. 기본값인 분당 300자로 계산합니다.';
+  var MINUTES_HINT_OK = '0.5~120분 사이로 입력하세요. 입력 즉시 계산됩니다.';
+  var MINUTES_HINT_BAD = '0.5~120분 사이의 숫자를 입력하세요. 기본값인 3분으로 계산합니다.';
+
+  var last = null;      /* 마지막 계산 결과 (복사용) */
+  var copyHintTimer = null;
+
+  var speed = T.initChips(document.querySelector('[data-name="speed"]'), function (value) {
+    var isCustom = value === 'custom';
+    customField.classList.toggle('hidden', !isCustom);
+    if (isCustom) {
+      rateEl.focus();
+      rateEl.select();
+    }
+    update();
+    updateReverse();
+  });
+
+  /* 현재 적용할 분당 글자수. 직접 입력이 잘못되면 기본값 300 적용 */
+  function currentRate() {
+    var value = speed.value;
+    if (value !== 'custom') {
+      var preset = T.toNumber(value, NaN);
+      return { rate: isFinite(preset) ? preset : DEFAULT_RATE, custom: false, invalid: false };
+    }
+    var n = T.toNumber(rateEl.value, NaN);
+    var ok = isFinite(n) && n >= RATE_MIN && n <= RATE_MAX;
+    rateHint.textContent = ok ? RATE_HINT_OK : RATE_HINT_BAD;
+    rateHint.classList.toggle('text-bad', !ok);
+    return { rate: ok ? n : DEFAULT_RATE, custom: true, invalid: !ok };
+  }
+
+  function update() {
+    var c = T.count(textEl.value);
+    var r = currentRate();
+    var breath = breathEl.checked;
+    var seconds = 0;
+    if (!c.isEmpty) {
+      seconds = c.withoutSpaces / r.rate * 60;
+      if (breath) seconds += c.sentences * BREATH_SECONDS;
+    }
+    var duration = T.formatDuration(seconds);
+
+    bigEl.textContent = duration;
+    emptyHint.classList.toggle('hidden', !c.isEmpty);
+    vChars.textContent = T.formatNumber(c.withoutSpaces) + '자';
+    vSentences.textContent = T.formatNumber(c.sentences) + '문장';
+    vWithSpaces.textContent = T.formatNumber(c.withSpaces) + '자';
+    vRate.textContent = '분당 ' + T.formatNumber(r.rate) + '자';
+
+    last = {
+      isEmpty: c.isEmpty,
+      duration: duration,
+      chars: c.withoutSpaces,
+      sentences: c.sentences,
+      rate: r.rate,
+      breath: breath
+    };
+  }
+
+  function buildSummary() {
+    if (!last) update();
+    var s = '예상 소요 시간 ' + last.duration +
+      ' (공백 제외 ' + T.formatNumber(last.chars) + '자, 분당 ' + T.formatNumber(last.rate) + '자 기준';
+    if (last.breath) s += ', 문장당 0.5초 호흡 포함';
+    return s + ')';
+  }
+
+  function showCopyHint(message) {
+    copyHint.textContent = message;
+    copyHint.classList.remove('hidden');
+    clearTimeout(copyHintTimer);
+    copyHintTimer = setTimeout(function () { copyHint.classList.add('hidden'); }, 2500);
+  }
+
+  /* 역산: N분 발표에 필요한 글자수 */
+  function currentMinutes() {
+    var n = T.toNumber(minutesEl.value, NaN);
+    var ok = isFinite(n) && n >= MIN_MINUTES && n <= MAX_MINUTES;
+    minutesHint.textContent = ok ? MINUTES_HINT_OK : MINUTES_HINT_BAD;
+    minutesHint.classList.toggle('text-bad', !ok);
+    return ok ? n : DEFAULT_MINUTES;
+  }
+
+  function formatMinutes(m) {
+    var rounded = Math.round(m * 10) / 10;
+    return T.formatNumber(rounded);
+  }
+
+  function updateReverse() {
+    var minutes = currentMinutes();
+    var slow = Math.round(minutes * PRESETS[0].rate);
+    var normal = Math.round(minutes * PRESETS[1].rate);
+    var fast = Math.round(minutes * PRESETS[2].rate);
+    revSlow.textContent = T.formatNumber(slow) + '자';
+    revNormal.textContent = T.formatNumber(normal) + '자';
+    revFast.textContent = T.formatNumber(fast) + '자';
+
+    var r = currentRate();
+    var showCustom = r.custom && !r.invalid;
+    revCustomItem.classList.toggle('hidden', !showCustom);
+    if (showCustom) {
+      revCustomLabel.textContent = '직접 입력 (분당 ' + T.formatNumber(r.rate) + '자)';
+      revCustom.textContent = T.formatNumber(Math.round(minutes * r.rate)) + '자';
+    }
+
+    revRange.textContent = formatMinutes(minutes) + '분 발표라면 공백 제외 약 ' +
+      T.formatNumber(slow) + '~' + T.formatNumber(fast) + '자가 적당합니다.';
+  }
+
+  textEl.addEventListener('input', update);
+  breathEl.addEventListener('change', update);
+  rateEl.addEventListener('input', function () { update(); updateReverse(); });
+  minutesEl.addEventListener('input', updateReverse);
+
+  copyBtn.addEventListener('click', function () {
+    if (!last) update();
+    if (last.isEmpty) {
+      showCopyHint('복사할 결과가 없습니다. 먼저 원고를 입력하세요.');
+      return;
+    }
+    T.copyText(buildSummary(), copyBtn).then(function (ok) {
+      if (!ok) showCopyHint('복사에 실패했습니다. 결과를 직접 선택해 복사해 주세요.');
+    });
+  });
+
+  update();
+  updateReverse();
+})();
+</script>
+</body>
+</html>

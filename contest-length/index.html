@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>공모전 분량 체크기 | 원고지 매수 변환 · 신춘문예 단편 분량 확인</title>
+<meta name="description" content="원고를 붙여넣으면 200자 원고지 매수와 공백 포함·제외 글자수, A4 매수를 바로 계산합니다. 신춘문예·문예지 신인상·장편 공모 등 분량 기준과 비교해 몇 매가 부족하거나 초과하는지 확인하세요.">
+<link rel="canonical" href="https://choi-kwan-u.github.io/tools/contest-length/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="공모전 분량 체크기 | 원고지 매수 변환 · 신춘문예 단편 분량 확인">
+<meta property="og:description" content="원고를 붙여넣으면 200자 원고지 매수와 공백 포함·제외 글자수, A4 매수를 바로 계산합니다. 신춘문예·문예지 신인상·장편 공모 등 분량 기준과 비교해 몇 매가 부족하거나 초과하는지 확인하세요.">
+<meta property="og:url" content="https://choi-kwan-u.github.io/tools/contest-length/">
+<meta property="og:site_name" content="글쓰기 도구함">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%233d3a35'/%3E%3Ctext x='50' y='70' font-size='56' text-anchor='middle' fill='white' font-family='sans-serif'%3E글%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  .poem-row { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-top: 12px; }
+  .poem-row .plabel { display: block; font-size: 12px; color: var(--muted); }
+  .poem-row .pvalue { display: block; font-size: 16px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="site-header"></div>
+  <main>
+    <h1>공모전 분량 체크기</h1>
+    <p class="lead">원고를 붙여넣으면 200자 원고지 매수와 글자수를 바로 계산하고, 공모전 분량 기준과 비교해 드립니다.</p>
+
+    <section class="card">
+      <div class="field">
+        <label class="field-label" for="text">원고 붙여넣기</label>
+        <textarea id="text" placeholder="원고를 붙여넣으세요. 문단마다 줄을 바꾸면 원고지 매수가 더 정확하게 계산됩니다." spellcheck="false"></textarea>
+        <p class="hint">입력한 글은 서버로 보내지 않고 브라우저 안에서만 계산합니다.</p>
+      </div>
+
+      <div class="chip-group">
+        <p class="chip-group-title">공모전 기준</p>
+        <div class="chips" data-name="genre"></div>
+      </div>
+
+      <div id="custom-range" class="field hidden">
+        <p class="field-label">직접 입력 (원고지 매수)</p>
+        <div class="field-row">
+          <input type="number" id="custom-min" class="inline-input" min="1" max="5000" step="1" inputmode="numeric" placeholder="최소" aria-label="최소 매수">
+          <span class="unit">매 ~</span>
+          <input type="number" id="custom-max" class="inline-input" min="1" max="5000" step="1" inputmode="numeric" placeholder="최대" aria-label="최대 매수">
+          <span class="unit">매</span>
+        </div>
+        <p class="hint" id="custom-hint">1~5,000 사이의 숫자로 입력하세요. 예: 70 ~ 80</p>
+      </div>
+
+      <p class="hint" id="criteria-info">공모전 기준을 선택하면 내 글이 분량 범위 안에 드는지 바로 알려드립니다.</p>
+
+      <div class="result">
+        <p class="result-label">200자 원고지 매수</p>
+        <p class="result-big" id="sheets">0매</p>
+        <p class="hint" id="sheets-exact">약 0.0매</p>
+        <div aria-live="polite"><span class="status hidden" id="status"></span></div>
+        <div id="poem-info" class="poem-row hidden">
+          <div><span class="plabel">줄 수 (내용 있는 줄)</span><span class="pvalue" id="poem-lines">0줄</span></div>
+          <div><span class="plabel">연 수 (빈 줄로 구분)</span><span class="pvalue" id="poem-stanzas">0연</span></div>
+        </div>
+        <div class="result-grid">
+          <div class="result-item"><span class="label">공백 포함 글자수</span><span class="value" id="with-spaces">0자</span></div>
+          <div class="result-item"><span class="label">공백 제외 글자수</span><span class="value" id="without-spaces">0자</span></div>
+          <div class="result-item"><span class="label">A4 매수 (1,800자 기준)</span><span class="value" id="a4-pages">약 0.0장</span></div>
+          <div class="result-item"><span class="label">원고지 줄 수</span><span class="value" id="manuscript-lines">0줄</span></div>
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" id="copy-btn">결과 복사</button>
+    </section>
+
+    <div class="ad-slot"><!-- AdSense 코드 자리 --></div>
+
+    <nav class="other-tools" aria-label="다른 도구">
+      <h2>다른 도구</h2>
+      <ul>
+        <li><a href="../speech-time/">발표 시간 계산기</a><span class="desc">글자수로 말하기 시간 계산</span></li>
+        <li><a href="../reading-time/">읽는 시간 계산기</a><span class="desc">글자수로 읽는 시간 계산</span></li>
+        <li><a href="../srt-tool/">SRT 자막 도구</a><span class="desc">자막 시간 밀기·합치기·검사</span></li>
+        <li><a href="../name-generator/">소설 인물 이름 생성기</a><span class="desc">시대·성별·분위기별 한국 이름</span></li>
+      </ul>
+    </nav>
+
+    <article class="article">
+      <h2>원고지 매수는 어떻게 계산하나요</h2>
+      <p>이 도구는 200자 원고지를 기준으로 매수를 계산합니다. 원고지 한 장은 가로 20칸, 세로 10줄로 이루어져 있으므로, 글이 원고지에서 몇 줄을 차지하는지 먼저 세고 그 줄 수를 10으로 나누어 올림한 값을 매수로 삼습니다. 줄 수를 셀 때는 문단(줄바꿈)마다 새 줄에서 시작한다고 보고, 문단별로 글자수를 20으로 나누어 올림한 값을 모두 더합니다. 문단 첫 칸을 비우는 들여쓰기는 계산에서 무시합니다.</p>
+      <p>예를 들어 45자짜리 문단은 세 줄(20자 + 20자 + 5자)을 차지하고, 12자짜리 대화문 한 마디도 한 줄을 통째로 차지합니다. 이렇게 모든 문단의 줄 수를 더해 73줄이 나왔다면 73 ÷ 10 = 7.3이므로 올림해서 8매가 됩니다. 큰 숫자로 보이는 "N매"는 이렇게 올림한 값이고, 그 아래 "약 N.N매"는 소수 첫째 자리까지 계산한 값입니다. 공모전 요강의 범위와 비교할 때는 두 값을 함께 보시면 됩니다.</p>
+
+      <h2>글자수 ÷ 200이 매수가 아닌 이유</h2>
+      <p>원고지 한 장에 200칸이 있으니 글자수를 200으로 나누면 매수가 나올 것 같지만, 실제 매수는 그보다 거의 항상 많이 나옵니다. 문단이 끝날 때마다 그 줄의 나머지 칸이 빈 채로 남고, 다음 문단은 새 줄에서 시작하기 때문입니다. 특히 소설은 대화문이 많아서 "네.", "왜요?" 같은 짧은 말 한마디가 원고지 한 줄을 통째로 차지합니다. 대화가 많은 장면에서는 글자수에 비해 매수가 크게 늘어나기도 합니다.</p>
+      <p>반대로 문단을 거의 나누지 않고 길게 이어 쓴 글은 글자수 ÷ 200에 가까운 매수가 나옵니다. 같은 글자수라도 문단 구성에 따라 매수가 달라지므로, 공모전에 내기 전에는 글자수가 아니라 실제 원고지 매수로 분량을 확인하는 것이 안전합니다. 이 도구에 글을 붙여넣을 때는 문단마다 줄바꿈이 살아 있어야 정확한 값이 나옵니다. 워드프로세서에서 복사해 오면 보통 줄바꿈이 그대로 유지됩니다.</p>
+
+      <h2>공모전 요강 읽는 법</h2>
+      <p>요강마다 분량을 표시하는 방식이 달라서 같은 "80매"라도 뜻이 다를 수 있습니다. 투고 전에 아래 항목을 확인하세요.</p>
+      <ul>
+        <li><strong>글자수 기준인지 매수 기준인지</strong> — "200자 원고지 80매 내외"는 매수 기준이고, "공백 포함 15,000자 이내"는 글자수 기준입니다. 최근에는 A4 장수(예: A4 10장 내외, 글꼴 10포인트)로 적는 곳도 있는데, 이때는 지정된 글꼴 크기와 줄 간격으로 직접 출력해 확인하는 것이 가장 정확합니다.</li>
+        <li><strong>공백 포함 여부</strong> — 글자수 기준이라면 공백을 포함하느냐 제외하느냐에 따라 일반적으로 15~20% 정도 차이가 납니다. 명시가 없으면 주최 측에 문의하거나, 더 엄격한 쪽(공백 포함)으로 맞추는 편이 안전합니다.</li>
+        <li><strong>제목·목차·작가의 말 포함 여부</strong> — 대개 본문만 세지만, 장편 공모는 시놉시스나 목차를 별도로 요구하는 경우가 많습니다. 이런 부속 문서가 본문 분량에 포함되는지 확인하세요.</li>
+        <li><strong>"내외"와 "이내"의 차이</strong> — "80매 내외"는 약간 넘거나 모자라도 되지만, "80매 이내"는 넘기면 안 됩니다. "70매 이상"처럼 하한선이 붙은 요강도 반드시 지켜야 합니다.</li>
+        <li><strong>매년 달라지는 요강</strong> — 아래 표의 범위는 일반적인 관행이며, 주최 측이 해마다 분량을 조정하기도 합니다. 반드시 해당 연도의 공식 요강을 확인하세요.</li>
+      </ul>
+
+      <h2>공모전별 분량 기준표</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>장르</th><th>일반적인 분량</th><th>비고</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>단편소설 신춘문예</td><td>70~80매</td><td>매년 요강 확인 필요</td></tr>
+            <tr><td>단편소설 문예지 신인상</td><td>70~100매</td><td>매년 요강 확인 필요</td></tr>
+            <tr><td>중편소설</td><td>200~300매</td><td>매년 요강 확인 필요</td></tr>
+            <tr><td>장편소설 공모</td><td>800~1,200매</td><td>매년 요강 확인 필요</td></tr>
+            <tr><td>시</td><td>3~5편</td><td>편 수 기준 · 매년 요강 확인 필요</td></tr>
+            <tr><td>수필·에세이</td><td>10~15매</td><td>매년 요강 확인 필요</td></tr>
+            <tr><td>청소년 소설</td><td>500~800매</td><td>매년 요강 확인 필요</td></tr>
+            <tr><td>동화</td><td>30~40매</td><td>매년 요강 확인 필요</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>시는 매수가 아니라 편 수로 분량을 정하는 것이 일반적입니다. 그래서 "시"를 선택하면 매수 판정 대신 내용이 있는 줄 수와 빈 줄로 구분한 연 수를 보여드립니다. 한 편의 길이에 제한이 있는 공모라면 줄 수를 참고하세요. 표에 없는 공모전은 "직접 입력"을 선택해 요강에 적힌 최소·최대 매수를 넣으면 같은 방식으로 판정합니다.</p>
+
+      <h2>간단한 예시</h2>
+      <p>공백 포함 14,500자, 문단 180개로 이루어진 단편소설을 붙여넣었다고 가정해 보겠습니다. 글자수를 200으로 나누면 72.5매이지만, 문단마다 남는 빈칸과 짧은 대화문 때문에 실제 줄 수는 820줄 안팎이 되고 매수는 약 82매로 계산됩니다. 신춘문예 기준(70~80매)을 선택하면 "2매 초과"로 표시되므로, 대화문을 다듬거나 장면 하나를 줄여야 한다는 것을 바로 알 수 있습니다. 반대로 요강이 "공백 포함 15,000자 이내"라면 글자수 기준으로는 범위 안이니, 주최 측이 어떤 기준을 쓰는지에 따라 판단이 달라집니다.</p>
+      <p>모든 계산은 브라우저 안에서만 이루어지며 입력한 원고는 서버로 전송되지 않습니다. 계산 결과는 참고용이니 최종 제출 전에는 요강에 적힌 방식(원고지 양식으로 출력, 문서 편집기의 문서 정보 등)으로 한 번 더 확인하시기 바랍니다.</p>
+    </article>
+  </main>
+
+  <div class="ad-slot"><!-- AdSense 코드 자리 --></div>
+  <div id="site-footer"></div>
+</div>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* 공모전 분량 기준표 — 일반적 관행 범위. 매년 요강 확인 필요. */
+  var CRITERIA = [
+    { key: 'short-newspaper', label: '단편소설 신춘문예',      min: 70,  max: 80,   unit: '매', note: '매년 요강 확인 필요' },
+    { key: 'short-magazine',  label: '단편소설 문예지 신인상', min: 70,  max: 100,  unit: '매', note: '매년 요강 확인 필요' },
+    { key: 'novella',         label: '중편소설',              min: 200, max: 300,  unit: '매', note: '매년 요강 확인 필요' },
+    { key: 'novel',           label: '장편소설 공모',         min: 800, max: 1200, unit: '매', note: '매년 요강 확인 필요' },
+    { key: 'poem',            label: '시',                   min: 3,   max: 5,    unit: '편', note: '매년 요강 확인 필요' },
+    { key: 'essay',           label: '수필·에세이',           min: 10,  max: 15,   unit: '매', note: '매년 요강 확인 필요' },
+    { key: 'young-adult',     label: '청소년 소설',           min: 500, max: 800,  unit: '매', note: '매년 요강 확인 필요' },
+    { key: 'children',        label: '동화',                 min: 30,  max: 40,   unit: '매', note: '매년 요강 확인 필요' }
+  ];
+  var CUSTOM_MIN = 1;
+  var CUSTOM_MAX = 5000;
+  var CUSTOM_HINT_DEFAULT = '1~5,000 사이의 숫자로 입력하세요. 예: 70 ~ 80';
+  var INFO_NONE = '공모전 기준을 선택하면 내 글이 분량 범위 안에 드는지 바로 알려드립니다.';
+
+  function $(id) { return document.getElementById(id); }
+
+  var textEl = $('text');
+  var chipsEl = document.querySelector('[data-name="genre"]');
+  var customBox = $('custom-range');
+  var minEl = $('custom-min');
+  var maxEl = $('custom-max');
+  var customHint = $('custom-hint');
+  var infoEl = $('criteria-info');
+  var bigEl = $('sheets');
+  var exactEl = $('sheets-exact');
+  var statusEl = $('status');
+  var poemBox = $('poem-info');
+  var poemLinesEl = $('poem-lines');
+  var poemStanzasEl = $('poem-stanzas');
+  var withEl = $('with-spaces');
+  var withoutEl = $('without-spaces');
+  var a4El = $('a4-pages');
+  var linesEl = $('manuscript-lines');
+  var copyBtn = $('copy-btn');
+
+  var fmt = Tools.formatNumber;
+
+  /* 소수 첫째 자리 고정 + 천 단위 구분 (예: 1,234.5 / 91.0) */
+  function fmt1(n) {
+    n = Number(n);
+    if (!isFinite(n)) n = 0;
+    return n.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
+
+  function rangeText(min, max, unit) {
+    return fmt(min) + '~' + fmt(max) + unit;
+  }
+
+  function findCriteria(key) {
+    for (var i = 0; i < CRITERIA.length; i++) {
+      if (CRITERIA[i].key === key) return CRITERIA[i];
+    }
+    return null;
+  }
+
+  /* 연 수: 빈 줄(공백만 있는 줄 포함)로 구분된 덩어리 수 */
+  function countStanzas(text) {
+    var t = String(text == null ? '' : text).replace(/\r\n?/g, '\n').trim();
+    if (!t) return 0;
+    return t.split(/\n(?:[ \t　]*\n)+/).filter(function (s) { return s.trim().length > 0; }).length;
+  }
+
+  /* ---------- 칩 생성: 선택 안 함 → 기준표 → 직접 입력 ---------- */
+  function makeChip(value, label, active) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = active ? 'chip is-active' : 'chip';
+    b.setAttribute('data-value', value);
+    b.textContent = label;
+    return b;
+  }
+  chipsEl.appendChild(makeChip('none', '선택 안 함', true));
+  CRITERIA.forEach(function (c) { chipsEl.appendChild(makeChip(c.key, c.label, false)); });
+  chipsEl.appendChild(makeChip('custom', '직접 입력', false));
+
+  var genre = Tools.initChips(chipsEl, function (value) {
+    customBox.classList.toggle('hidden', value !== 'custom');
+    if (value === 'custom' && minEl.value === '' && maxEl.value === '') minEl.focus();
+    update();
+  });
+
+  /* ---------- 표시 헬퍼 ---------- */
+  function setStatus(level, text) {
+    statusEl.className = 'status status-' + level;
+    statusEl.textContent = text;
+  }
+  function hideStatus() {
+    statusEl.className = 'status hidden';
+    statusEl.textContent = '';
+  }
+  function setInfo(text) { infoEl.textContent = text; }
+  function setCustomHint(text, bad) {
+    customHint.textContent = text;
+    customHint.classList.toggle('text-bad', !!bad);
+  }
+
+  /* 직접 입력 검증: 둘 다 입력, 1~5000, 최소 ≤ 최대 */
+  function readCustomRange() {
+    var rawMin = String(minEl.value == null ? '' : minEl.value).trim();
+    var rawMax = String(maxEl.value == null ? '' : maxEl.value).trim();
+    if (rawMin === '' || rawMax === '') {
+      return { ok: false, bad: false, hint: CUSTOM_HINT_DEFAULT, status: '최소·최대 매수를 입력하세요' };
+    }
+    var min = Tools.toNumber(rawMin, NaN);
+    var max = Tools.toNumber(rawMax, NaN);
+    var inRange = function (n) { return isFinite(n) && n >= CUSTOM_MIN && n <= CUSTOM_MAX; };
+    if (!inRange(min) || !inRange(max)) {
+      return { ok: false, bad: true, hint: '최소·최대 매수는 1~5,000 사이의 숫자로 입력하세요.', status: '입력값을 확인하세요' };
+    }
+    min = Math.round(min);
+    max = Math.round(max);
+    if (min > max) {
+      return {
+        ok: false, bad: true,
+        hint: '최소 매수(' + fmt(min) + '매)가 최대 매수(' + fmt(max) + '매)보다 큽니다. 최소는 최대보다 작거나 같게 입력하세요.',
+        status: '최소 매수가 최대 매수보다 큽니다'
+      };
+    }
+    return { ok: true, min: min, max: max };
+  }
+
+  /* 결과 복사용 기준 요약 줄 (update 에서 갱신) */
+  var verdictLine = '';
+
+  /* ---------- 실시간 갱신 ---------- */
+  function update() {
+    var text = textEl.value;
+    var c = Tools.count(text);
+    var sheets = c.manuscriptSheets;
+
+    bigEl.textContent = fmt(sheets) + '매';
+    exactEl.textContent = '약 ' + fmt1(c.manuscriptSheetsExact) + '매';
+    withEl.textContent = fmt(c.withSpaces) + '자';
+    withoutEl.textContent = fmt(c.withoutSpaces) + '자';
+    a4El.textContent = '약 ' + fmt1(c.a4Pages) + '장';
+    linesEl.textContent = fmt(c.manuscriptLines) + '줄';
+
+    var key = genre.value;
+    poemBox.classList.add('hidden');
+    verdictLine = '';
+
+    if (key === 'none') {
+      hideStatus();
+      setInfo(INFO_NONE);
+      return;
+    }
+
+    if (key === 'poem') {
+      var p = findCriteria('poem');
+      var stanzas = countStanzas(text);
+      poemBox.classList.remove('hidden');
+      poemLinesEl.textContent = fmt(c.nonEmptyLines) + '줄';
+      poemStanzasEl.textContent = fmt(stanzas) + '연';
+      setInfo('기준: ' + p.label + ' ' + rangeText(p.min, p.max, p.unit) + ' · ' + p.note);
+      setStatus('warn', '시는 편 수(3~5편) 기준이라 줄·연 수를 보여드립니다');
+      verdictLine = '기준: ' + p.label + ' ' + rangeText(p.min, p.max, p.unit) +
+        ' · 줄 수 ' + fmt(c.nonEmptyLines) + '줄 · 연 수 ' + fmt(stanzas) + '연';
+      return;
+    }
+
+    var range;
+    var label;
+    if (key === 'custom') {
+      var r = readCustomRange();
+      if (!r.ok) {
+        setCustomHint(r.hint, r.bad);
+        setInfo('기준: 직접 입력 · 최소·최대 매수를 입력하면 범위 안인지 판정합니다.');
+        setStatus('warn', r.status);
+        verdictLine = '기준: 직접 입력 (값 미입력)';
+        return;
+      }
+      setCustomHint(CUSTOM_HINT_DEFAULT, false);
+      range = r;
+      label = '직접 입력';
+      setInfo('기준: 직접 입력 ' + rangeText(r.min, r.max, '매'));
+    } else {
+      var cr = findCriteria(key);
+      if (!cr) {
+        hideStatus();
+        setInfo(INFO_NONE);
+        return;
+      }
+      range = cr;
+      label = cr.label;
+      setInfo('기준: ' + cr.label + ' ' + rangeText(cr.min, cr.max, cr.unit) + ' · ' + cr.note);
+    }
+
+    var verdict;
+    if (sheets < range.min) {
+      verdict = fmt(range.min - sheets) + '매 부족';
+      setStatus('bad', verdict);
+    } else if (sheets > range.max) {
+      verdict = fmt(sheets - range.max) + '매 초과';
+      setStatus('bad', verdict);
+    } else {
+      verdict = '범위 안';
+      setStatus('ok', verdict);
+    }
+    verdictLine = '기준: ' + label + ' ' + rangeText(range.min, range.max, '매') + ' → ' + verdict;
+  }
+
+  /* ---------- 결과 복사 ---------- */
+  function buildSummary() {
+    var c = Tools.count(textEl.value);
+    var lines = [
+      '원고지 ' + fmt(c.manuscriptSheets) + '매 (약 ' + fmt1(c.manuscriptSheetsExact) + '매, ' + fmt(c.manuscriptLines) + '줄)',
+      '글자수 공백 포함 ' + fmt(c.withSpaces) + '자 · 공백 제외 ' + fmt(c.withoutSpaces) + '자',
+      'A4 약 ' + fmt1(c.a4Pages) + '장 (1,800자 기준)'
+    ];
+    if (verdictLine) lines.push(verdictLine);
+    return lines.join('\n');
+  }
+
+  copyBtn.addEventListener('click', function () {
+    Tools.copyText(buildSummary(), copyBtn);
+  });
+
+  textEl.addEventListener('input', update);
+  minEl.addEventListener('input', update);
+  maxEl.addEventListener('input', update);
+
+  update();
+})();
+</script>
+</body>
+</html>
